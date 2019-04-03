@@ -164,6 +164,7 @@ func (c *Cluster) chooseCluster(ctx diagnostics.Handler) error {
 // Todo figure out how to have some of these come in as parameters - predefine the sa?
 func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) error {
 
+  color.Blue("Getting namespaces ...")
   namespaceOptions, namespaceNames, err := c.getNamespaces(ctx)
   if err != nil {
     fmt.Println("TODO: This needs error handlingc")
@@ -337,9 +338,6 @@ func (c *Cluster) getNamespaces(ctx diagnostics.Handler) ([]string, []string, er
   }
 
   w.Flush()
-
-  fmt.Println(b.String())
-  fmt.Println(names)
 
   return strings.Split(b.String(), "\n"), names, nil
 }
