@@ -15,15 +15,9 @@
 package cmd
 
 import (
-	// "encoding/json"
-	// "github.com/armory/spinnaker-tools/internal/pkg/prompt"
 	"github.com/armory/spinnaker-tools/internal/pkg/debug"
-	// "github.com/armory/spinnaker-tools/internal/pkg/params"
 	"github.com/armory/spinnaker-tools/internal/pkg/k8s"
-	// "github.com/armory/spinnaker-tools/internal/pkg/prompt/k8sPrompt"
 	"fmt"
-	// "net/http"
-	// "os"
 
 	"github.com/spf13/cobra"
 )
@@ -31,7 +25,7 @@ import (
 var sourceKubeconfig string
 var destKubeconfig string
 
-// backupCmd represents the backup command
+// createKubeconfig creates a service account and kubeconfig
 var createKubeconfig = &cobra.Command{
 	Use:   "createKubeconfig",
 	Short: "A brief description of your command",
@@ -42,10 +36,6 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// fmt.Println("Hello")
-
-		// Create params (will need to tweak this)
-		// params := &params.Params{}
 
 		// Create a debug context
 		ctx, err := debug.NewContext(true)
@@ -55,7 +45,6 @@ to quickly create a Cobra application.`,
 
 		// Create k8s.NewOperations
 		// TODO: change parameters
-		// k8sOp, _ := k8s.NewOperations(true, "/Users/justin/workspace/tmp/kubeconfig-local")
 		cluster, err := k8s.GetCluster(ctx, sourceKubeconfig, "")
 		if err != nil {
 			fmt.Println("TODO: This needs error handlingb")
@@ -68,10 +57,6 @@ to quickly create a Cobra application.`,
 		f := cluster.DefineOutputFile(destKubeconfig, &sa)
 		cluster.CreateServiceAccount(ctx, &sa)
 		cluster.CreateKubeconfigFile(ctx, f, sa)
-
-		// fmt.Println(cluster)
-		// fmt.Println(sa)
-
 	},
 }
 

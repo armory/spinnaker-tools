@@ -15,10 +15,7 @@
 package cmd
 
 import (
-	// "encoding/json"
 	"fmt"
-	// "net/http"
-	// "os"
 
 	"github.com/spf13/cobra"
 )

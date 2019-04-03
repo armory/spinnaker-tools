@@ -10,7 +10,6 @@ import (
   "os"
   "path/filepath"
 	"io/ioutil"
-  // "strconv"
   "strings"
   "text/tabwriter"
   "regexp"
@@ -18,7 +17,6 @@ import (
 	"os/exec"
 
   "github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
-  // "github.com/armory/spinnaker-tools/internal/pkg/params"
   "github.com/armory/spinnaker-tools/internal/pkg/utils"
   "github.com/fatih/color"
 
@@ -34,10 +32,6 @@ type clusterContext struct {
   ClusterName string
   contextName string
 }
-
-// type Context struct {
-//   index i
-// }
 
 type ServiceAccount struct {
   Namespace string
@@ -68,6 +62,7 @@ type serviceAccountContext struct {
 	Alias string
 }
 
+// GetCluster looks at the kubeconfig and allows you to select a context (cluster) to start with
 // May come in with a kubeconfigfile (defaults to regular if not)
 // May come in with a contextName; otherwise prompt for one
 func GetCluster(ctx diagnostics.Handler, kubeconfigFile string, contextName string) (*Cluster, error) {
@@ -166,7 +161,7 @@ func (c *Cluster) chooseCluster(ctx diagnostics.Handler) error {
   return nil
 }
 
-// todo figure out how to have some of these come in as parameters - predefine the sa?
+// Todo figure out how to have some of these come in as parameters - predefine the sa?
 func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) error {
 
   namespaceOptions, namespaceNames, err := c.getNamespaces(ctx)
@@ -379,7 +374,6 @@ func promptNamespace(options, names []string) (string, bool, error) {
       return result, true, nil
     }
   }
-
   return names[index], false, nil
 }
 
