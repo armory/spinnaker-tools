@@ -27,14 +27,12 @@ var destKubeconfig string
 
 // createKubeconfig creates a service account and kubeconfig
 var createKubeconfig = &cobra.Command{
-	Use:   "createKubeconfig",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "createSAkubeconfig",
+	Short: "Create a service account and Kubeconfig",
+	Long: `Given a Kubernetes kubeconfig and context, will create the following:
+	* Kubernetes ServiceAccount
+	* Kubernetes ClusterRole granting the service account access to cluster-admin
+	* kubeconfig file with credentials for the ServiceAccount`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// Create a debug context
@@ -47,7 +45,7 @@ to quickly create a Cobra application.`,
 		// TODO: change parameters
 		cluster, err := k8s.GetCluster(ctx, sourceKubeconfig, "")
 		if err != nil {
-			fmt.Println("TODO: This needs error handlingb")
+			fmt.Println("TODO: This needs error handling")
 		}
 
 
@@ -63,16 +61,6 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(createKubeconfig)
 
-	rootCmd.PersistentFlags().StringVarP(&sourceKubeconfig, "source-kubeconfig", "s", "", "Specify a starting kubeconfig")
-	rootCmd.PersistentFlags().StringVarP(&destKubeconfig, "output-kubeconfig", "o", "", "Output kubeconfig")
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// backupCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// backupCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().StringVarP(&sourceKubeconfig, "kubeconfig", "i", "", "kubeconfig to start with")
+	rootCmd.PersistentFlags().StringVarP(&destKubeconfig, "output", "o", "", "kubeconfig to output to")
 }
