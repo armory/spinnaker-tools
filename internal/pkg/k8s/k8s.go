@@ -13,7 +13,6 @@ import (
   "strings"
   "text/tabwriter"
   "regexp"
-  "text/template"
 	"os/exec"
 
   "github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
@@ -23,6 +22,8 @@ import (
   "github.com/manifoldco/promptui"
 )
 
+
+// Cluster : Everything needed to talk to a K8s cluster
 type Cluster struct {
   kubeconfigFile string
   context clusterContext
@@ -33,6 +34,7 @@ type clusterContext struct {
   contextName string
 }
 
+// ServiceAccount : Information about the ServiceAccount to use
 type ServiceAccount struct {
   Namespace string
   newNamespace bool
@@ -43,7 +45,7 @@ type ServiceAccount struct {
   // namespaces []string
 }
 
-type namespaceJson struct {
+type namespaceJSON struct {
   Items []struct {
     Metadata struct {
       Name              string `json:"name"`
@@ -65,6 +67,7 @@ type serviceAccountContext struct {
 // GetCluster looks at the kubeconfig and allows you to select a context (cluster) to start with
 // May come in with a kubeconfigfile (defaults to regular if not)
 // May come in with a contextName; otherwise prompt for one
+// TODO: Use KUBECONFIG env variable
 func GetCluster(ctx diagnostics.Handler, kubeconfigFile string, contextName string) (*Cluster, error) {
   if kubeconfigFile != "" {
     if strings.HasPrefix(kubeconfigFile, "~/") {
@@ -97,6 +100,7 @@ func GetCluster(ctx diagnostics.Handler, kubeconfigFile string, contextName stri
 }
 
 // Should get all contexts, and then prompt to select one
+// TODO: remove ctx
 func (c *Cluster) chooseCluster(ctx diagnostics.Handler) error {
 
   // TODO: Break into separate function: Get contexts
@@ -161,7 +165,12 @@ func (c *Cluster) chooseCluster(ctx diagnostics.Handler) error {
   return nil
 }
 
-// Todo figure out how to have some of these come in as parameters - predefine the sa?
+// DefineServiceAccount : Populates all fields of ServiceAccount sa, including the following:
+// * If Namespace is not specified, gets the list of namespaces and prompts to select one or use a new one
+// * If ServiceAccountName is not specified, prompts for the service account name
+// 
+// TODO: Be able to pass in values for these at start of execution
+// TODO: Prompt for non-admin service account perms
 func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) error {
 
   color.Blue("Getting namespaces ...")
@@ -175,7 +184,7 @@ func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
   } else {
     sa.Namespace, sa.newNamespace, err = promptNamespace(namespaceOptions, namespaceNames)
     if err != nil {
-      fmt.Println("TODO: This needs error handlingd")
+      fmt.Println("TODO: This needs error handling")
     }
   }
 
@@ -199,41 +208,39 @@ func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
   return nil
 }
 
-// This doesn't actually need to be attached to a Cluster...)
-// Todo - switch this away from pointer, since I don't think we need it
-// Todo this is actually really ugly
+// DefineOutputFile : Prompts for a path for the file to be created (if it is not already set up)
+// TODO: switch to multiple errors
 func (c *Cluster) DefineOutputFile(filename string, sa *ServiceAccount) (string) {
-	var f string
-	var fullpath string
+	// var f string
+  var fullFilename string
+  var err error
 
-	if filename != "" {
-		f = filename
-	} else {
+	if filename == "" {
 		// Todo: prepopulate with something from sa
 		outputPrompt := promptui.Prompt{
 			Label: "Where would you like to output the kubeconfig",
 			Default: "kubeconfig-sa",
 		}
 		// There's some weirdness here.  Can't get an err?
-		f, _ = outputPrompt.Run()
-		// if err != nil {
-		// 	fmt.Println("Error handling here")
-		// 	return ""
-		// }
+		filename, err = outputPrompt.Run()
+		if err != nil {
+			fmt.Println("Error handling here")
+			return ""
+		}
 	}
-	
 
-	if f[0] == byte('/') {
-		fullpath = f
+	if filename[0] == byte('/') {
+		fullFilename = filename
 	} else {
-		fullpath = filepath.Join(os.Getenv("PWD"), f)
+		fullFilename = filepath.Join(os.Getenv("PWD"), filename)
 	}
 
-	return fullpath
+	return fullFilename
 	
 }
 
-
+// CreateServiceAccount : Creates the service account (and namespace, if it doesn't already exist)
+// TODO: Handle non-admin service account
 func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) error {
   if sa.newNamespace {
 		fmt.Println("Creating namespace", sa.Namespace)
@@ -253,7 +260,12 @@ func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
   return nil
 }
 
-// Returns full path to created kubeconfig, serr, error
+// CreateKubeconfigFile : Creates the kubeconfig, by doing the following:
+// * Get the token for the service account
+// * Get information about the current kubeconfig
+// * Generates a kubeconfig from the above
+// * Writes it to a file
+// Returns full path to created kubeconfig file, string error, error
 func (c *Cluster) CreateKubeconfigFile(ctx diagnostics.Handler, filename string, sa ServiceAccount) (string, string, error) {
 	token, serr, err := c.getToken(sa)
 	if err != nil {
@@ -300,7 +312,10 @@ func (c *Cluster) CreateKubeconfigFile(ctx diagnostics.Handler, filename string,
 	return f, "", nil
 }
 
-// Returns fancy formatted and short formatted list of namespaces
+// Gets the current list of namespaces from the cluster
+// Returns two items:
+// * Slice of strings of namespaces with metadata (for prompter)
+// * Slice of strings of namespaces only
 func (c *Cluster) getNamespaces(ctx diagnostics.Handler) ([]string, []string, error) {
   options := []string{
     "--context", c.context.contextName,
@@ -316,7 +331,7 @@ func (c *Cluster) getNamespaces(ctx diagnostics.Handler) ([]string, []string, er
     return nil, nil, err
   }
 
-  var n namespaceJson
+  var n namespaceJSON
   if err := json.NewDecoder(output).Decode(&n); err != nil {
     ctx.Error("Cannot decode JSON for getting namespaces", err)
     color.Red("Could not get namespaces")
@@ -388,6 +403,8 @@ func k8sValidator(input string) error {
   return nil
 }
 
+// Create namespace in cluster
+// TODO: remove ctx
 func (c *Cluster) createNamespace(ctx diagnostics.Handler, namespace string) error {
   options := []string{
     "create",
@@ -407,7 +424,7 @@ func (c *Cluster) createNamespace(ctx diagnostics.Handler, namespace string) err
   return nil
 }
 
-// creates admin service accuont
+// Creates Service Account and ClusterRoleBinding to `cluster-admin`
 func (c *Cluster) createAdminServiceAccount(sa ServiceAccount) error {
   a := serviceAccountDefinitionAdmin(sa)
 	// fmt.Println(a)
@@ -422,7 +439,9 @@ func (c *Cluster) createAdminServiceAccount(sa ServiceAccount) error {
   // return nil
 }
 
-// // Takes a string array, returns a string array
+// Takes a list of options and appends `--kubeconfig <kubeconfigfile>`
+// TODO: decide if we really need a function for this?
+// TODO: switch to both kubeconfig and context
 func appendKubeconfigFile(kubeconfigFile string, options []string) []string {
   if kubeconfigFile != "" {
     options = append(options, "--kubeconfig", kubeconfigFile)
@@ -478,87 +497,6 @@ func writeKubeconfigFile(kc string, f string) (string, string, error) {
 	return f, "", nil
 }
 
-func buildKubeconfig(sac serviceAccountContext) (string, string, error) {
-  var tpl bytes.Buffer
-
-  t, err := template.New("ServiceAccountManifest").Parse(
-`apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority-data: {{ .CA }}
-    server: {{ .Server }}
-  name: {{ .Alias }}
-contexts:
-- context:
-    cluster: {{ .Alias }}
-    user: {{ .Alias }}
-  name: {{ .Alias }}
-current-context: {{ .Alias }}
-kind: Config
-preferences: {}
-users:
-- name: {{ .Alias }}
-  user:
-    token: {{ .Token }}
-`)
-  if err != nil {
-    fmt.Println(err)
-    fmt.Println("TODO error handling1")
-    return "", "Failed to Template", err
-  }
-
-  err = t.Execute(&tpl, sac)
-  if err != nil {
-    fmt.Println(err)
-    fmt.Println("TODO error handling2")
-    return "", "Failed to execute template", err
-  }
-
-  return tpl.String(), "", nil
-}
-
-// Returns the YAML manifest for a service account (using admin)
-func serviceAccountDefinitionAdmin(sa ServiceAccount) string {
-  var tpl bytes.Buffer
-
-  t, err := template.New("ServiceAccountManifest").Parse(
-`---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: {{ .ServiceAccountName }}
-  namespace: {{ .Namespace }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: {{ .Namespace }}-{{ .ServiceAccountName }}-admin
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: ServiceAccount
-  name: {{ .ServiceAccountName }}
-  namespace: {{ .Namespace }}
-`)
-  if err != nil {
-    fmt.Println(err)
-    fmt.Println("TODO error handling1")
-    return ""
-  }
-
-  err = t.Execute(&tpl, sa)
-  if err != nil {
-    fmt.Println(err)
-    fmt.Println("TODO error handling2")
-    return ""
-  }
-
-  return tpl.String()
-}
-
-
 func getValueAt(line string) string {
   i := strings.Index(line, " ")
   if i == -1 {
@@ -566,7 +504,6 @@ func getValueAt(line string) string {
   }
   return line[0:i]
 }
-
 
 // Returns server URL, CA, string error, error
 func (c *Cluster) getClusterInfo() (string, string, string, error) {
@@ -626,37 +563,6 @@ func (c *Cluster) getClusterInfo() (string, string, string, error) {
 	return srv, string(cb), "", nil
 }
 
-type KubectlVersionDetails struct {
-	Minor string `json:"minor"`
-	Major string `json:"major"`
-}
-
-func (kvd *KubectlVersionDetails) GetMinorVersionInt() (int, error) {
-	return strconv.Atoi(kvd.Minor)
-}
-
-type KubectlVersion struct {
-	ClientVersion KubectlVersionDetails `json:"clientVersion"`
-}
-
-// GetKubectlVersion gets a machine readable version of kubectl version
-func GetKubectlVersion() (KubectlVersion, error) {
-	options := []string{
-		"version",
-		"-o=json",
-	}
-
-	o, stderr, err := utils.RunCommand("kubectl", options...)
-	if err != nil {
-		return KubectlVersion{}, errors.New(stderr.String())
-	}
-
-	var kVersion KubectlVersion
-	if err := json.NewDecoder(o).Decode(&kVersion); err != nil {
-		return KubectlVersion{}, err
-	}
-	return kVersion, nil
-}
 
 // Validates a kubeconfig file
 func checkKubeConfigConnectivity(f string) error {
