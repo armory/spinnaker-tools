@@ -2,3 +2,4 @@ hidden-cmd
 hidden-internal
 spinnaker-tools
 kubeconfig-*
+build/

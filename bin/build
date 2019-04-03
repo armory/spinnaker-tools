@@ -1,0 +1,5 @@
+#!/bin/bash
+set -x
+
+GOOS=darwin GOARCH=amd64 go build -o build/spinnaker-tools-darwin
+GOOS=linux GOARCH=amd64 go build -o build/spinnaker-tools-linux
