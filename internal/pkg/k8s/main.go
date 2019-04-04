@@ -106,7 +106,13 @@ func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 	}
 
 	if sa.Namespace != "" {
-		// TODO allow prepopulated
+		sa.newNamespace = true
+		// TODO: If prepopulated, do something else
+		for _, namespace := range namespaceNames {
+			if sa.Namespace == namespace {
+				sa.newNamespace = false
+			}
+		}
 	} else {
 		sa.Namespace, sa.newNamespace, err = promptNamespace(namespaceOptions, namespaceNames)
 		if err != nil {
@@ -116,9 +122,11 @@ func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 
 	// TODO get a current list of service accounts
 	// c.getServiceAccounts(ctx, sa.namespace)
+	// Generally speaking, creating a service account that already exists should not have a negative effect
 
 	if sa.ServiceAccountName != "" {
-		// TODO allow prepopulated
+		// TODO allow prepopulated, handle pre-existence
+		sa.newServiceAccount = true
 	} else {
 		serviceAccountPrompt := promptui.Prompt{
 			Label:    "What name would you like to give the service account",

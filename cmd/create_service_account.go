@@ -27,6 +27,8 @@ import (
 var sourceKubeconfig string
 var destKubeconfig string
 var context string
+var namespace string
+var serviceAccountName string
 
 // createServiceAccount creates a service account and kubeconfig
 var createServiceAccount = &cobra.Command{
@@ -56,7 +58,10 @@ var createServiceAccount = &cobra.Command{
 			os.Exit(1)
 		}
 
-		sa := k8s.ServiceAccount{}
+		sa := k8s.ServiceAccount{
+			Namespace:          namespace,
+			ServiceAccountName: serviceAccountName,
+		}
 
 		// TODO: Figure out which need pointers and which don't, and remove those that don't
 		// TODO: each of these should have some error handling built in
@@ -100,4 +105,7 @@ func init() {
 	createServiceAccount.PersistentFlags().StringVarP(&sourceKubeconfig, "kubeconfig", "i", "", "kubeconfig to start with")
 	createServiceAccount.PersistentFlags().StringVarP(&destKubeconfig, "output", "o", "", "kubeconfig to output to")
 	createServiceAccount.PersistentFlags().StringVarP(&context, "context", "c", "", "kubeconfig to output to")
+	createServiceAccount.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "kubeconfig to output to")
+	createServiceAccount.PersistentFlags().StringVarP(&serviceAccountName, "serviceAccountName", "s", "", "kubeconfig to output to")
+
 }
