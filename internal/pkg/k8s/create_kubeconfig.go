@@ -15,26 +15,22 @@ import (
 // Returns token, error string, error
 // Called by CreateKubeconfig
 func (c *Cluster) getToken(sa ServiceAccount) (string, string, error) {
-	options1 := []string{
-		"--context", c.context.contextName,
+	options1 := c.buildCommand([]string{
 		"get", "serviceaccount", sa.ServiceAccountName,
 		"-n", sa.Namespace,
 		"-o", "jsonpath={.secrets[0].name}",
-	}
-	options1 = appendKubeconfigFile(c.kubeconfigFile, options1)
+	})
 
 	o, serr, err := utils.RunCommand("kubectl", options1...)
 	if err != nil {
 		return "", serr.String(), err
 	}
 
-	options2 := []string{
-		"--context", c.context.contextName,
+	options2 := c.buildCommand([]string{
 		"get", "secret", o.String(),
 		"-n", sa.Namespace,
 		"-o", "jsonpath={.data.token}",
-	}
-	options2 = appendKubeconfigFile(c.kubeconfigFile, options2)
+	})
 
 	t, serr, err := utils.RunCommand("kubectl", options2...)
 	if err != nil {
@@ -49,6 +45,8 @@ func (c *Cluster) getToken(sa ServiceAccount) (string, string, error) {
 
 // Returns full path to file, error string, error
 // Called by CreateKubeconfig
+// TODO: verify permissions
+// TODO: if file exists, prompt for overwrite or new file
 func writeKubeconfigFile(kc string, f string) (string, string, error) {
 
 	// moved to DefineOutputFile
@@ -71,12 +69,11 @@ func (c *Cluster) getClusterInfo() (string, string, string, error) {
 	}
 
 	path := fmt.Sprintf("{.clusters[?(@.name=='%s')].cluster['server','certificate-authority-data']}", c.context.ClusterName)
-	options := []string{
-		"--context", c.context.contextName,
+
+	options := c.buildCommand([]string{
 		"config", "view", "--raw",
 		"-o", "jsonpath=" + path,
-	}
-	options = appendKubeconfigFile(c.kubeconfigFile, options)
+	})
 
 	o, serr, err := utils.RunCommand("kubectl", options...)
 	if err != nil {

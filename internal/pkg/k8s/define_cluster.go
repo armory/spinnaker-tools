@@ -14,13 +14,13 @@ import (
 // Should get all contexts, and then prompt to select one
 // TODO: remove ctx
 // Called by GetCluster
-func (c *Cluster) chooseCluster(ctx diagnostics.Handler) error {
+func (c *Cluster) chooseContext(ctx diagnostics.Handler) error {
 
 	// TODO: Break into separate function: Get contexts
 	options := []string{
+		"--kubeconfig", c.kubeconfigFile,
 		"config", "get-contexts",
 	}
-	options = appendKubeconfigFile(c.kubeconfigFile, options)
 
 	b, _, err := utils.RunCommand("kubectl", options...)
 	if err != nil {

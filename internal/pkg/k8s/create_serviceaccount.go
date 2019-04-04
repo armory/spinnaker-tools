@@ -10,12 +10,10 @@ import (
 // TODO: remove ctx
 // Called by CreateServiceAccount
 func (c *Cluster) createNamespace(ctx diagnostics.Handler, namespace string) error {
-	options := []string{
+	options := c.buildCommand([]string{
 		"create",
 		"namespace", namespace,
-		"--context", c.context.contextName,
-	}
-	options = appendKubeconfigFile(c.kubeconfigFile, options)
+	})
 
 	output, serr, err := utils.RunCommand("kubectl", options...)
 	if err != nil {
@@ -34,11 +32,9 @@ func (c *Cluster) createAdminServiceAccount(sa ServiceAccount) error {
 	a := serviceAccountDefinitionAdmin(sa)
 	// fmt.Println(a)
 
-	options := []string{
-		"--context", c.context.contextName,
+	options := c.buildCommand([]string{
 		"apply", "-f", "-",
-	}
-	options = appendKubeconfigFile(c.kubeconfigFile, options)
+	})
 
 	return utils.RunCommandInput("kubectl", a, options...)
 	// return nil

@@ -55,7 +55,7 @@ type serviceAccountContext struct {
 }
 
 // GetCluster looks at the kubeconfig and allows you to select a context (cluster) to start with
-// May come in with a kubeconfigfile (defaults to regular if not)
+// May come in with a kubeconfigFile (defaults to regular if not)
 // May come in with a contextName; otherwise prompt for one
 // TODO: Use KUBECONFIG env variable
 func DefineCluster(ctx diagnostics.Handler, kubeconfigFile string, contextName string) (*Cluster, error) {
@@ -84,7 +84,7 @@ func DefineCluster(ctx diagnostics.Handler, kubeconfigFile string, contextName s
 
 	c := Cluster{kubeconfigFile: kubeconfigFile, context: clusterContext{}}
 
-	_ = c.chooseCluster(ctx)
+	_ = c.chooseContext(ctx)
 
 	return &c, nil
 }

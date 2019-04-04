@@ -20,12 +20,10 @@ import (
 // * Slice of strings of namespaces only
 // Called by DefineServiceAccount
 func (c *Cluster) getNamespaces(ctx diagnostics.Handler) ([]string, []string, error) {
-	options := []string{
-		"--context", c.context.contextName,
+	options := c.buildCommand([]string{
 		"get", "namespace",
 		"-o=json",
-	}
-	options = appendKubeconfigFile(c.kubeconfigFile, options)
+	})
 
 	output, serr, err := utils.RunCommand("kubectl", options...)
 	if err != nil {

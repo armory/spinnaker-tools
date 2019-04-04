@@ -55,15 +55,16 @@ func k8sValidator(input string) error {
 	return nil
 }
 
-// Takes a list of options and appends `--kubeconfig <kubeconfigfile>`
-// TODO: decide if we really need a function for this?
-// TODO: switch to both kubeconfig and context
-// Utility
-func appendKubeconfigFile(kubeconfigFile string, options []string) []string {
-	if kubeconfigFile != "" {
-		options = append(options, "--kubeconfig", kubeconfigFile)
+// Takes a list of options, adds kubeconfig and context
+func (c *Cluster) buildCommand(command []string) []string {
+	options := []string{}
+	if c.kubeconfigFile != "" {
+		options = append(options, "--kubeconfig", c.kubeconfigFile)
 	}
-
+	if c.context.contextName != "" {
+		options = append(options, "--context", c.context.contextName)
+	}
+	options = append(options, command...)
 	return options
 }
 
