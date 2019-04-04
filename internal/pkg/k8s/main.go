@@ -59,36 +59,36 @@ type serviceAccountContext struct {
 // May come in with a KubeconfigFile (defaults to regular if not)
 // May come in with a contextName; otherwise prompt for one
 // TODO: Use KUBECONFIG env variable
-func (c *Cluster) DefineCluster(ctx diagnostics.Handler) (error) {
+func (c *Cluster) DefineCluster(ctx diagnostics.Handler) (string, error) {
 	if c.KubeconfigFile != "" {
 		if strings.HasPrefix(c.KubeconfigFile, "~/") {
 			c.KubeconfigFile = filepath.Join(os.Getenv("HOME"), c.KubeconfigFile[2:])
 		}
 
 		if _, err := os.Stat(c.KubeconfigFile); !os.IsNotExist(err) {
-			fmt.Printf("Using kubeconfig file `%s`\n", c.KubeconfigFile)
+			color.Green("Using kubeconfig file `%s`\n", c.KubeconfigFile)
 		} else {
 			color.Red("`%s` is not a file or permissions are incorrect\n", c.KubeconfigFile)
-			return err
+			return "kubeconfig not readable", err
 		}
 
 	} else {
 		c.KubeconfigFile = filepath.Join(os.Getenv("HOME"), ".kube/config")
 
 		if _, err := os.Stat(c.KubeconfigFile); !os.IsNotExist(err) {
-			fmt.Printf("Using kubeconfig file `%s`\n", c.KubeconfigFile)
+			color.Green("Using kubeconfig file `%s`\n", c.KubeconfigFile)
 		} else {
 			color.Red("`%s` is not a file or permissions are incorrect\n", c.KubeconfigFile)
-			return err
+			return "kubeconfig not readable", err
 		}
 	}
 
-  err := c.chooseContext(ctx)
-  if err != nil {
-    return err
-  }
+	serr, err := c.chooseContext(ctx)
+	if err != nil {
+		return serr, err
+	}
 
-	return nil
+	return "", nil
 }
 
 // DefineServiceAccount : Populates all fields of ServiceAccount sa, including the following:
@@ -97,12 +97,12 @@ func (c *Cluster) DefineCluster(ctx diagnostics.Handler) (error) {
 //
 // TODO: Be able to pass in values for these at start of execution
 // TODO: Prompt for non-admin service account perms
-func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) error {
+func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) (string, error) {
 
 	color.Blue("Getting namespaces ...")
 	namespaceOptions, namespaceNames, err := c.getNamespaces(ctx)
 	if err != nil {
-		fmt.Println("TODO: This needs error handlingc")
+		return "Unable to get namespaces from cluster", err
 	}
 
 	if sa.Namespace != "" {
@@ -110,7 +110,7 @@ func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 	} else {
 		sa.Namespace, sa.newNamespace, err = promptNamespace(namespaceOptions, namespaceNames)
 		if err != nil {
-			fmt.Println("TODO: This needs error handling")
+			return "Namespace not selected", err
 		}
 	}
 
@@ -125,33 +125,34 @@ func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 			Default:  "spinnaker-service-account",
 			Validate: k8sValidator,
 		}
+		// TODO: Better catch ^C
 		sa.ServiceAccountName, err = serviceAccountPrompt.Run()
-		if err != nil {
-			return err
+		if err != nil || len(sa.ServiceAccountName) < 2 {
+			return "Service account name not given", err
 		}
 		sa.newServiceAccount = true
 	}
-	return nil
+	return "", nil
 }
 
 // DefineOutputFile : Prompts for a path for the file to be created (if it is not already set up)
 // TODO: switch to multiple errors
-func (c *Cluster) DefineOutputFile(filename string, sa *ServiceAccount) string {
+func (c *Cluster) DefineOutputFile(filename string, sa *ServiceAccount) (string, string, error) {
 	// var f string
 	var fullFilename string
 	var err error
 
 	if filename == "" {
 		// Todo: prepopulate with something from sa
-		outputPrompt := promptui.Prompt{
+		outputFilePrompt := promptui.Prompt{
 			Label:   "Where would you like to output the kubeconfig",
 			Default: "kubeconfig-sa",
 		}
 		// There's some weirdness here.  Can't get an err?
-		filename, err = outputPrompt.Run()
-		if err != nil {
-			fmt.Println("Error handling here")
-			return ""
+		// TODO: Better catch ^C
+		filename, err = outputFilePrompt.Run()
+		if err != nil || len(filename) < 2 {
+			return "", "Output file not given", err
 		}
 	}
 
@@ -161,16 +162,21 @@ func (c *Cluster) DefineOutputFile(filename string, sa *ServiceAccount) string {
 		fullFilename = filepath.Join(os.Getenv("PWD"), filename)
 	}
 
-	return fullFilename
+	return fullFilename, "", err
 
 }
 
 // CreateServiceAccount : Creates the service account (and namespace, if it doesn't already exist)
 // TODO: Handle non-admin service account
-func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) error {
+// TODO: Handle pre-existing service account
+func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) (string, error) {
 	if sa.newNamespace {
 		fmt.Println("Creating namespace", sa.Namespace)
-		c.createNamespace(ctx, sa.Namespace)
+		err := c.createNamespace(ctx, sa.Namespace)
+		if err != nil {
+			color.Red("Unable to create namespace")
+			return "Unable to create namespace", err
+		}
 	}
 
 	// Later will test to see if we want a full cluster-admin user
@@ -178,12 +184,12 @@ func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 		color.Blue("Creating admin service account %s ...", sa.ServiceAccountName)
 		err := c.createAdminServiceAccount(*sa)
 		if err != nil {
-			color.Red("Unable to create service account.")
-			ctx.Error("Unable to create service account", err)
-			return err
+			// color.Red("Unable to create service account.")
+			// ctx.Error("Unable to create service account", err)
+			return "Unable to create service account", err
 		}
 	}
-	return nil
+	return "", nil
 }
 
 // CreateKubeconfig : Creates the kubeconfig, by doing the following:
@@ -230,8 +236,6 @@ func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa 
 		ctx.Error("Unable to make a kubeconfig for the selected cluster", err)
 		return "", "Unable to connect", err
 	}
-
-	color.Green("Created kubeconfig file at %s", f)
 
 	return f, "", nil
 }

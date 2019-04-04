@@ -1,6 +1,7 @@
 # spinnaker-tools
-
 TODO: Add license (Apache 2.0?)
+
+This is currently very rough and is essentially an MVP.  Needs a decent amount of refactoring, and we need to add more parameters so this can be fully automated.
 
 Build
 
