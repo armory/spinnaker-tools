@@ -38,7 +38,7 @@ var createKubeconfig = &cobra.Command{
 		// Create a debug context
 		ctx, err := debug.NewContext(true)
 		if err != nil {
-			fmt.Println("TODO: This needs error handlinga")
+			fmt.Println("TODO: This needs error handling")
 		}
 
 		// Create k8s.NewOperations
@@ -48,13 +48,14 @@ var createKubeconfig = &cobra.Command{
 			fmt.Println("TODO: This needs error handling")
 		}
 
-
 		sa := k8s.ServiceAccount{}
 
+		// TODO: Figure out which need pointers and which don't, and remove those that don't
+		// TODO: each of these should have some error handling built in
 		cluster.DefineServiceAccount(ctx, &sa)
 		f := cluster.DefineOutputFile(destKubeconfig, &sa)
 		cluster.CreateServiceAccount(ctx, &sa)
-		cluster.CreateKubeconfigFile(ctx, f, sa)
+		cluster.CreateKubeconfig(ctx, f, sa)
 	},
 }
 

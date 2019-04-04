@@ -6,7 +6,6 @@ import (
   "text/template"
 )
 
-
 func buildKubeconfig(sac serviceAccountContext) (string, string, error) {
   var tpl bytes.Buffer
 
