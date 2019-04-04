@@ -3,3 +3,4 @@ hidden-internal
 spinnaker-tools
 kubeconfig-*
 .DS_Store
+build/
