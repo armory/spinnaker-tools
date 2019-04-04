@@ -58,7 +58,7 @@ type serviceAccountContext struct {
 // May come in with a kubeconfigfile (defaults to regular if not)
 // May come in with a contextName; otherwise prompt for one
 // TODO: Use KUBECONFIG env variable
-func GetCluster(ctx diagnostics.Handler, kubeconfigFile string, contextName string) (*Cluster, error) {
+func DefineCluster(ctx diagnostics.Handler, kubeconfigFile string, contextName string) (*Cluster, error) {
 	if kubeconfigFile != "" {
 		if strings.HasPrefix(kubeconfigFile, "~/") {
 			kubeconfigFile = filepath.Join(os.Getenv("HOME"), kubeconfigFile[2:])

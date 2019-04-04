@@ -43,7 +43,7 @@ var createKubeconfig = &cobra.Command{
 
 		// Create k8s.NewOperations
 		// TODO: change parameters
-		cluster, err := k8s.GetCluster(ctx, sourceKubeconfig, "")
+		cluster, err := k8s.DefineCluster(ctx, sourceKubeconfig, "")
 		if err != nil {
 			fmt.Println("TODO: This needs error handling")
 		}
