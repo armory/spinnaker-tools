@@ -42,9 +42,9 @@ func (c *Cluster) chooseContext(ctx diagnostics.Handler) (string, error) {
 		Label: "Choose the Kubernetes cluster to deploy to",
 		Items: contexts,
 		Templates: &promptui.SelectTemplates{
-			Active:   fmt.Sprintf("%s {{ .ClusterName | underline }}", promptui.IconSelect),
-			Inactive: "{{.ClusterName}}",
-			Selected: fmt.Sprintf(`{{ "%s" | green }} {{ .ClusterName | faint }}`, promptui.IconGood),
+			Active:   fmt.Sprintf("%s {{ .ClusterName | underline }} [ {{ .ContextName }} ]", promptui.IconSelect),
+			Inactive: "{{.ClusterName}} [ {{ .ContextName }} ]",
+			Selected: fmt.Sprintf(`{{ "%s" | green }} {{ .ClusterName | faint }} [ {{ .ContextName }} ]`, promptui.IconGood),
 		},
 	}
 	idx, _, err := pr.Run()
