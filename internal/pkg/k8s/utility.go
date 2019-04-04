@@ -1,12 +1,12 @@
 package k8s
 
 import (
-	"strings"
+	"encoding/json"
+	"errors"
+	"github.com/armory/spinnaker-tools/internal/pkg/utils"
+	"regexp"
 	"strconv"
-  "encoding/json"
-  "errors"
-  "github.com/armory/spinnaker-tools/internal/pkg/utils"
-  "regexp"
+	"strings"
 )
 
 type KubectlVersionDetails struct {
@@ -45,16 +45,15 @@ func GetKubectlVersion() (KubectlVersion, error) {
 func k8sValidator(input string) error {
 	matched, err := regexp.MatchString(`^[a-z]([-a-z0-9]*[a-z0-9])?$`, input)
 	if err != nil {
-	  return err
+		return err
 	}
-  
-	if !matched {
-	  return errors.New("invalid name")
-	}
-  
-	return nil
-  }
 
+	if !matched {
+		return errors.New("invalid name")
+	}
+
+	return nil
+}
 
 // Takes a list of options and appends `--kubeconfig <kubeconfigfile>`
 // TODO: decide if we really need a function for this?
@@ -62,19 +61,17 @@ func k8sValidator(input string) error {
 // Utility
 func appendKubeconfigFile(kubeconfigFile string, options []string) []string {
 	if kubeconfigFile != "" {
-	  options = append(options, "--kubeconfig", kubeconfigFile)
+		options = append(options, "--kubeconfig", kubeconfigFile)
 	}
-  
+
 	return options
-  }
-  
-  
-  // Utility
-  func getValueAt(line string) string {
+}
+
+// Utility
+func getValueAt(line string) string {
 	i := strings.Index(line, " ")
 	if i == -1 {
-	  return line
+		return line
 	}
 	return line[0:i]
-  }
-  
+}

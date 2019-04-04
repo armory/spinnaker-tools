@@ -28,7 +28,7 @@ func NewContext(debug bool) (*context, error) {
 		started: time.Now(),
 		os:      runtime.GOOS,
 		// uuid:    s,
-		debug:   debug,
+		debug: debug,
 	}, nil
 }
 

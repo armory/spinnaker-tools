@@ -23,7 +23,6 @@ import (
 	// "github.com/spf13/viper"
 )
 
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "spinnaker-tools",

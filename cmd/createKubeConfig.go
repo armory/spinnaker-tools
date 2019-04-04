@@ -15,9 +15,9 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/armory/spinnaker-tools/internal/pkg/debug"
 	"github.com/armory/spinnaker-tools/internal/pkg/k8s"
-	"fmt"
 
 	"github.com/spf13/cobra"
 )

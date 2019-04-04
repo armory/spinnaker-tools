@@ -1,58 +1,57 @@
 package k8s
 
 import (
-  "fmt"
-  "os"
-  "path/filepath"
-  "strings"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
-  "github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
-  "github.com/fatih/color"
+	"github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
+	"github.com/fatih/color"
 
-  "github.com/manifoldco/promptui"
+	"github.com/manifoldco/promptui"
 )
-
 
 // Cluster : Everything needed to talk to a K8s cluster
 type Cluster struct {
-  kubeconfigFile string
-  context clusterContext
+	kubeconfigFile string
+	context        clusterContext
 }
 
 // TODO: make these either public or private
 type clusterContext struct {
-  ClusterName string
-  contextName string
+	ClusterName string
+	contextName string
 }
 
 // ServiceAccount : Information about the ServiceAccount to use
 type ServiceAccount struct {
-  Namespace string
-  newNamespace bool
-  ServiceAccountName string
-  newServiceAccount bool
-  // TODO handle non-cluster-admin service account
-  // admin bool
-  // namespaces []string
+	Namespace          string
+	newNamespace       bool
+	ServiceAccountName string
+	newServiceAccount  bool
+	// TODO handle non-cluster-admin service account
+	// admin bool
+	// namespaces []string
 }
 
 type namespaceJSON struct {
-  Items []struct {
-    Metadata struct {
-      Name              string `json:"name"`
-      CreationTimestamp string `json:"creationTimestamp"`
-    } `json:"metadata"`
-    Status struct {
-      Phase string `json:"phase"`
-    } `json:"status"`
-  } `json:"items"`
+	Items []struct {
+		Metadata struct {
+			Name              string `json:"name"`
+			CreationTimestamp string `json:"creationTimestamp"`
+		} `json:"metadata"`
+		Status struct {
+			Phase string `json:"phase"`
+		} `json:"status"`
+	} `json:"items"`
 }
 
 type serviceAccountContext struct {
-	CA string
+	CA     string
 	Server string
-	Token string
-	Alias string
+	Token  string
+	Alias  string
 }
 
 // GetCluster looks at the kubeconfig and allows you to select a context (cluster) to start with
@@ -60,91 +59,90 @@ type serviceAccountContext struct {
 // May come in with a contextName; otherwise prompt for one
 // TODO: Use KUBECONFIG env variable
 func GetCluster(ctx diagnostics.Handler, kubeconfigFile string, contextName string) (*Cluster, error) {
-  if kubeconfigFile != "" {
-    if strings.HasPrefix(kubeconfigFile, "~/") {
-      kubeconfigFile = filepath.Join(os.Getenv("HOME"), kubeconfigFile[2:])
-    }
+	if kubeconfigFile != "" {
+		if strings.HasPrefix(kubeconfigFile, "~/") {
+			kubeconfigFile = filepath.Join(os.Getenv("HOME"), kubeconfigFile[2:])
+		}
 
-    if _, err := os.Stat(kubeconfigFile); !os.IsNotExist(err) {
-      fmt.Printf("Using kubeconfig file `%s`\n", kubeconfigFile)
-    } else {
-      color.Red("`%s` is not a file or permissions are incorrect\n", kubeconfigFile)
-      return &Cluster{}, err
-    }
+		if _, err := os.Stat(kubeconfigFile); !os.IsNotExist(err) {
+			fmt.Printf("Using kubeconfig file `%s`\n", kubeconfigFile)
+		} else {
+			color.Red("`%s` is not a file or permissions are incorrect\n", kubeconfigFile)
+			return &Cluster{}, err
+		}
 
-  } else {
-    kubeconfigFile = filepath.Join(os.Getenv("HOME"), ".kube/config")
+	} else {
+		kubeconfigFile = filepath.Join(os.Getenv("HOME"), ".kube/config")
 
-    if _, err := os.Stat(kubeconfigFile); !os.IsNotExist(err) {
-      fmt.Printf("Using kubeconfig file `%s`\n", kubeconfigFile)
-    } else {
-      color.Red("`%s` is not a file or permissions are incorrect\n", kubeconfigFile)
-      return &Cluster{}, err
-    }
-  }
+		if _, err := os.Stat(kubeconfigFile); !os.IsNotExist(err) {
+			fmt.Printf("Using kubeconfig file `%s`\n", kubeconfigFile)
+		} else {
+			color.Red("`%s` is not a file or permissions are incorrect\n", kubeconfigFile)
+			return &Cluster{}, err
+		}
+	}
 
-  c := Cluster{kubeconfigFile: kubeconfigFile, context: clusterContext{}}
+	c := Cluster{kubeconfigFile: kubeconfigFile, context: clusterContext{}}
 
-  _ = c.chooseCluster(ctx)
-  
-  return &c, nil
+	_ = c.chooseCluster(ctx)
+
+	return &c, nil
 }
-
 
 // DefineServiceAccount : Populates all fields of ServiceAccount sa, including the following:
 // * If Namespace is not specified, gets the list of namespaces and prompts to select one or use a new one
 // * If ServiceAccountName is not specified, prompts for the service account name
-// 
+//
 // TODO: Be able to pass in values for these at start of execution
 // TODO: Prompt for non-admin service account perms
 func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) error {
 
-  color.Blue("Getting namespaces ...")
-  namespaceOptions, namespaceNames, err := c.getNamespaces(ctx)
-  if err != nil {
-    fmt.Println("TODO: This needs error handlingc")
-  }
+	color.Blue("Getting namespaces ...")
+	namespaceOptions, namespaceNames, err := c.getNamespaces(ctx)
+	if err != nil {
+		fmt.Println("TODO: This needs error handlingc")
+	}
 
-  if sa.Namespace != "" {
-    // TODO allow prepopulated
-  } else {
-    sa.Namespace, sa.newNamespace, err = promptNamespace(namespaceOptions, namespaceNames)
-    if err != nil {
-      fmt.Println("TODO: This needs error handling")
-    }
-  }
+	if sa.Namespace != "" {
+		// TODO allow prepopulated
+	} else {
+		sa.Namespace, sa.newNamespace, err = promptNamespace(namespaceOptions, namespaceNames)
+		if err != nil {
+			fmt.Println("TODO: This needs error handling")
+		}
+	}
 
-  // TODO get a current list of service accounts
-  // c.getServiceAccounts(ctx, sa.namespace)
+	// TODO get a current list of service accounts
+	// c.getServiceAccounts(ctx, sa.namespace)
 
-  if sa.ServiceAccountName != "" {
-    // TODO allow prepopulated
-  } else {
-    serviceAccountPrompt := promptui.Prompt{
-			Label: "What name would you like to give the service account",
-			Default: "spinnaker-service-account",
-      Validate: k8sValidator,
-    }
-    sa.ServiceAccountName, err = serviceAccountPrompt.Run()
-    if err != nil {
-      return err
-    }
-    sa.newServiceAccount = true
-  }
-  return nil
+	if sa.ServiceAccountName != "" {
+		// TODO allow prepopulated
+	} else {
+		serviceAccountPrompt := promptui.Prompt{
+			Label:    "What name would you like to give the service account",
+			Default:  "spinnaker-service-account",
+			Validate: k8sValidator,
+		}
+		sa.ServiceAccountName, err = serviceAccountPrompt.Run()
+		if err != nil {
+			return err
+		}
+		sa.newServiceAccount = true
+	}
+	return nil
 }
 
 // DefineOutputFile : Prompts for a path for the file to be created (if it is not already set up)
 // TODO: switch to multiple errors
-func (c *Cluster) DefineOutputFile(filename string, sa *ServiceAccount) (string) {
+func (c *Cluster) DefineOutputFile(filename string, sa *ServiceAccount) string {
 	// var f string
-  var fullFilename string
-  var err error
+	var fullFilename string
+	var err error
 
 	if filename == "" {
 		// Todo: prepopulate with something from sa
 		outputPrompt := promptui.Prompt{
-			Label: "Where would you like to output the kubeconfig",
+			Label:   "Where would you like to output the kubeconfig",
 			Default: "kubeconfig-sa",
 		}
 		// There's some weirdness here.  Can't get an err?
@@ -162,28 +160,28 @@ func (c *Cluster) DefineOutputFile(filename string, sa *ServiceAccount) (string)
 	}
 
 	return fullFilename
-	
+
 }
 
 // CreateServiceAccount : Creates the service account (and namespace, if it doesn't already exist)
 // TODO: Handle non-admin service account
 func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) error {
-  if sa.newNamespace {
+	if sa.newNamespace {
 		fmt.Println("Creating namespace", sa.Namespace)
-    c.createNamespace(ctx, sa.Namespace)
-  }
+		c.createNamespace(ctx, sa.Namespace)
+	}
 
 	// Later will test to see if we want a full cluster-admin user
-  if true {
+	if true {
 		color.Blue("Creating admin service account %s ...", sa.ServiceAccountName)
-    err := c.createAdminServiceAccount(*sa)
+		err := c.createAdminServiceAccount(*sa)
 		if err != nil {
 			color.Red("Unable to create service account.")
 			ctx.Error("Unable to create service account", err)
 			return err
 		}
-  }
-  return nil
+	}
+	return nil
 }
 
 // CreateKubeconfig : Creates the kubeconfig, by doing the following:
@@ -207,10 +205,10 @@ func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa 
 	}
 
 	sac := serviceAccountContext{
-		Alias: sa.Namespace + "-" + sa.ServiceAccountName,
-		Token: token,
+		Alias:  sa.Namespace + "-" + sa.ServiceAccountName,
+		Token:  token,
 		Server: srv,
-		CA: ca,
+		CA:     ca,
 	}
 
 	kc, serr, err := buildKubeconfig(sac)
@@ -231,8 +229,7 @@ func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa 
 		return "", "Unable to connect", err
 	}
 
-  color.Green("Created kubeconfig file at %s", f)
-
+	color.Green("Created kubeconfig file at %s", f)
 
 	return f, "", nil
 }

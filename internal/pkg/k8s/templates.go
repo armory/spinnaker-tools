@@ -1,16 +1,16 @@
 package k8s
 
 import (
-  "bytes"
-  "fmt"
-  "text/template"
+	"bytes"
+	"fmt"
+	"text/template"
 )
 
 func buildKubeconfig(sac serviceAccountContext) (string, string, error) {
-  var tpl bytes.Buffer
+	var tpl bytes.Buffer
 
-  t, err := template.New("ServiceAccountManifest").Parse(
-`apiVersion: v1
+	t, err := template.New("ServiceAccountManifest").Parse(
+		`apiVersion: v1
 clusters:
 - cluster:
     certificate-authority-data: {{ .CA }}
@@ -29,28 +29,28 @@ users:
   user:
     token: {{ .Token }}
 `)
-  if err != nil {
-    fmt.Println(err)
-    fmt.Println("TODO error handling1")
-    return "", "Failed to Template", err
-  }
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("TODO error handling1")
+		return "", "Failed to Template", err
+	}
 
-  err = t.Execute(&tpl, sac)
-  if err != nil {
-    fmt.Println(err)
-    fmt.Println("TODO error handling2")
-    return "", "Failed to execute template", err
-  }
+	err = t.Execute(&tpl, sac)
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("TODO error handling2")
+		return "", "Failed to execute template", err
+	}
 
-  return tpl.String(), "", nil
+	return tpl.String(), "", nil
 }
 
 // Returns the YAML manifest for a service account (using admin)
 func serviceAccountDefinitionAdmin(sa ServiceAccount) string {
-  var tpl bytes.Buffer
+	var tpl bytes.Buffer
 
-  t, err := template.New("ServiceAccountManifest").Parse(
-`---
+	t, err := template.New("ServiceAccountManifest").Parse(
+		`---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -70,18 +70,18 @@ subjects:
   name: {{ .ServiceAccountName }}
   namespace: {{ .Namespace }}
 `)
-  if err != nil {
-    fmt.Println(err)
-    fmt.Println("TODO error handling1")
-    return ""
-  }
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("TODO error handling1")
+		return ""
+	}
 
-  err = t.Execute(&tpl, sa)
-  if err != nil {
-    fmt.Println(err)
-    fmt.Println("TODO error handling2")
-    return ""
-  }
+	err = t.Execute(&tpl, sa)
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("TODO error handling2")
+		return ""
+	}
 
-  return tpl.String()
+	return tpl.String()
 }
