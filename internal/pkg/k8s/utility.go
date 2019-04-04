@@ -58,11 +58,11 @@ func k8sValidator(input string) error {
 // Takes a list of options, adds kubeconfig and context
 func (c *Cluster) buildCommand(command []string) []string {
 	options := []string{}
-	if c.kubeconfigFile != "" {
-		options = append(options, "--kubeconfig", c.kubeconfigFile)
+	if c.KubeconfigFile != "" {
+		options = append(options, "--kubeconfig", c.KubeconfigFile)
 	}
-	if c.context.contextName != "" {
-		options = append(options, "--context", c.context.contextName)
+	if c.Context.ContextName != "" {
+		options = append(options, "--context", c.Context.ContextName)
 	}
 	options = append(options, command...)
 	return options

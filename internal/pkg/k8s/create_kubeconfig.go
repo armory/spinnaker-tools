@@ -68,7 +68,7 @@ func (c *Cluster) getClusterInfo() (string, string, string, error) {
 		return "", "", "", err
 	}
 
-	path := fmt.Sprintf("{.clusters[?(@.name=='%s')].cluster['server','certificate-authority-data']}", c.context.ClusterName)
+	path := fmt.Sprintf("{.clusters[?(@.name=='%s')].cluster['server','certificate-authority-data']}", c.Context.ClusterName)
 
 	options := c.buildCommand([]string{
 		"config", "view", "--raw",

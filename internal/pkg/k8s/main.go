@@ -13,15 +13,16 @@ import (
 )
 
 // Cluster : Everything needed to talk to a K8s cluster
+// TODO: Maybe make a constructor so these can be private
 type Cluster struct {
-	kubeconfigFile string
-	context        clusterContext
+	KubeconfigFile string
+	Context        ClusterContext
 }
 
 // TODO: make these either public or private
-type clusterContext struct {
+type ClusterContext struct {
 	ClusterName string
-	contextName string
+	ContextName string
 }
 
 // ServiceAccount : Information about the ServiceAccount to use
@@ -55,38 +56,39 @@ type serviceAccountContext struct {
 }
 
 // GetCluster looks at the kubeconfig and allows you to select a context (cluster) to start with
-// May come in with a kubeconfigFile (defaults to regular if not)
+// May come in with a KubeconfigFile (defaults to regular if not)
 // May come in with a contextName; otherwise prompt for one
 // TODO: Use KUBECONFIG env variable
-func DefineCluster(ctx diagnostics.Handler, kubeconfigFile string, contextName string) (*Cluster, error) {
-	if kubeconfigFile != "" {
-		if strings.HasPrefix(kubeconfigFile, "~/") {
-			kubeconfigFile = filepath.Join(os.Getenv("HOME"), kubeconfigFile[2:])
+func (c *Cluster) DefineCluster(ctx diagnostics.Handler) (error) {
+	if c.KubeconfigFile != "" {
+		if strings.HasPrefix(c.KubeconfigFile, "~/") {
+			c.KubeconfigFile = filepath.Join(os.Getenv("HOME"), c.KubeconfigFile[2:])
 		}
 
-		if _, err := os.Stat(kubeconfigFile); !os.IsNotExist(err) {
-			fmt.Printf("Using kubeconfig file `%s`\n", kubeconfigFile)
+		if _, err := os.Stat(c.KubeconfigFile); !os.IsNotExist(err) {
+			fmt.Printf("Using kubeconfig file `%s`\n", c.KubeconfigFile)
 		} else {
-			color.Red("`%s` is not a file or permissions are incorrect\n", kubeconfigFile)
-			return &Cluster{}, err
+			color.Red("`%s` is not a file or permissions are incorrect\n", c.KubeconfigFile)
+			return err
 		}
 
 	} else {
-		kubeconfigFile = filepath.Join(os.Getenv("HOME"), ".kube/config")
+		c.KubeconfigFile = filepath.Join(os.Getenv("HOME"), ".kube/config")
 
-		if _, err := os.Stat(kubeconfigFile); !os.IsNotExist(err) {
-			fmt.Printf("Using kubeconfig file `%s`\n", kubeconfigFile)
+		if _, err := os.Stat(c.KubeconfigFile); !os.IsNotExist(err) {
+			fmt.Printf("Using kubeconfig file `%s`\n", c.KubeconfigFile)
 		} else {
-			color.Red("`%s` is not a file or permissions are incorrect\n", kubeconfigFile)
-			return &Cluster{}, err
+			color.Red("`%s` is not a file or permissions are incorrect\n", c.KubeconfigFile)
+			return err
 		}
 	}
 
-	c := Cluster{kubeconfigFile: kubeconfigFile, context: clusterContext{}}
+  err := c.chooseContext(ctx)
+  if err != nil {
+    return err
+  }
 
-	_ = c.chooseContext(ctx)
-
-	return &c, nil
+	return nil
 }
 
 // DefineServiceAccount : Populates all fields of ServiceAccount sa, including the following:

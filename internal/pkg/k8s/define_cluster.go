@@ -18,7 +18,7 @@ func (c *Cluster) chooseContext(ctx diagnostics.Handler) error {
 
 	// TODO: Break into separate function: Get contexts
 	options := []string{
-		"--kubeconfig", c.kubeconfigFile,
+		"--kubeconfig", c.KubeconfigFile,
 		"config", "get-contexts",
 	}
 
@@ -38,12 +38,12 @@ func (c *Cluster) chooseContext(ctx diagnostics.Handler) error {
 		return err
 	}
 
-	// Array of 'clusterContext's
-	contexts := make([]clusterContext, 0)
+	// Array of 'ClusterContext's
+	contexts := make([]ClusterContext, 0)
 	for i, l := range ls {
 		if i > 0 && len(l) > 0 {
-			cl := clusterContext{
-				contextName: getValueAt(l[contextIdx : len(l)-1]),
+			cl := ClusterContext{
+				ContextName: getValueAt(l[contextIdx : len(l)-1]),
 				ClusterName: getValueAt(l[clusterIdx : len(l)-1]),
 			}
 			contexts = append(contexts, cl)
@@ -74,6 +74,6 @@ func (c *Cluster) chooseContext(ctx diagnostics.Handler) error {
 	}
 	// ENDTODO: Prompt and select cluster
 
-	c.context = contexts[idx]
+	c.Context = contexts[idx]
 	return nil
 }
