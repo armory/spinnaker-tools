@@ -1,6 +1,7 @@
 # spinnaker-tools
-TODO: Support non-admin creds
-TODO: Switch to k8s bindings
+* TODO: Support non-admin creds
+* TODO: Switch to k8s bindings
+* TODO: Lots of other tests and bugfixes and improvements
 
 This is currently very rough and is essentially an MVP.  Needs a decent amount of refactoring, and we need to add more parameters so this can be fully automated.
 
