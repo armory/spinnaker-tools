@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"path/filepath"
+	"os"
 
 	"github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
 	"github.com/armory/spinnaker-tools/internal/pkg/utils"
@@ -11,6 +13,42 @@ import (
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 )
+
+// DefineCluster looks at the kubeconfig and allows you to select a context (cluster) to start with
+// May come in with a KubeconfigFile (defaults to regular if not)
+// May come in with a contextName; otherwise prompt for one
+// TODO: Use KUBECONFIG env variable
+func (c *Cluster) DefineCluster(ctx diagnostics.Handler) (string, error) {
+	if c.KubeconfigFile != "" {
+		if strings.HasPrefix(c.KubeconfigFile, "~/") {
+			c.KubeconfigFile = filepath.Join(os.Getenv("HOME"), c.KubeconfigFile[2:])
+		}
+
+		if _, err := os.Stat(c.KubeconfigFile); !os.IsNotExist(err) {
+			color.Green("Using kubeconfig file `%s`\n", c.KubeconfigFile)
+		} else {
+			color.Red("`%s` is not a file or permissions are incorrect\n", c.KubeconfigFile)
+			return "kubeconfig not readable", err
+		}
+
+	} else {
+		c.KubeconfigFile = filepath.Join(os.Getenv("HOME"), ".kube/config")
+
+		if _, err := os.Stat(c.KubeconfigFile); !os.IsNotExist(err) {
+			color.Green("Using kubeconfig file `%s`\n", c.KubeconfigFile)
+		} else {
+			color.Red("`%s` is not a file or permissions are incorrect\n", c.KubeconfigFile)
+			return "kubeconfig not readable", err
+		}
+	}
+
+	serr, err := c.chooseContext(ctx)
+	if err != nil {
+		return serr, err
+	}
+
+	return "", nil
+}
 
 // Should get all contexts, and then prompt to select one
 // TODO: remove ctx

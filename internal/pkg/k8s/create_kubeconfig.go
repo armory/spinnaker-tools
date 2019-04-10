@@ -9,8 +9,60 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
+
 	"github.com/armory/spinnaker-tools/internal/pkg/utils"
+	"github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
 )
+
+// CreateKubeconfig : Creates the kubeconfig, by doing the following:
+// * Get the token for the service account
+// * Get information about the current kubeconfig
+// * Generates a kubeconfig from the above
+// * Writes it to a file
+// Returns full path to created kubeconfig file, string error, error
+func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa ServiceAccount) (string, string, error) {
+	token, serr, err := c.getToken(sa)
+	if err != nil {
+		color.Red("Unable to obtain token for service account. Check you have access to the service account created.")
+		color.Red(serr)
+		ctx.Error(serr, err)
+		return "", serr, err
+	}
+
+	srv, ca, serr, err := c.getClusterInfo()
+	if err != nil {
+		return "", serr, err
+	}
+
+	sac := serviceAccountContext{
+		Alias:  sa.Namespace + "-" + sa.ServiceAccountName,
+		Token:  token,
+		Server: srv,
+		CA:     ca,
+	}
+
+	kc, serr, err := buildKubeconfig(sac)
+
+	// fmt.Println(kc)
+	f, serr, err := writeKubeconfigFile(kc, filename)
+	if err != nil {
+		fmt.Println("Need error handling")
+		fmt.Println(serr)
+		return "", serr, err
+	}
+
+	color.Blue("Checking connectivity to the cluster ...")
+	err = checkKubeConfigConnectivity(f)
+	if err != nil {
+		color.Red("\nAccess to the cluster failed: %v", err)
+		ctx.Error("Unable to make a kubeconfig for the selected cluster", err)
+		return "", "Unable to connect", err
+	}
+
+	return f, "", nil
+}
+
 
 // Returns token, error string, error
 // Called by CreateKubeconfig

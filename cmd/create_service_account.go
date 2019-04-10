@@ -73,7 +73,7 @@ var createServiceAccount = &cobra.Command{
 			os.Exit(1)
 		}
 
-		f, serr, err := cluster.DefineOutputFile(destKubeconfig, &sa)
+		f, serr, err := cluster.DefineKubeconfig(destKubeconfig, &sa)
 		if err != nil || serr != "" {
 			color.Red(serr)
 			color.Red("Defining output failed, exiting")
@@ -104,8 +104,8 @@ func init() {
 	// TODO: flag for service account name
 	createServiceAccount.PersistentFlags().StringVarP(&sourceKubeconfig, "kubeconfig", "i", "", "kubeconfig to start with")
 	createServiceAccount.PersistentFlags().StringVarP(&destKubeconfig, "output", "o", "", "kubeconfig to output to")
-	createServiceAccount.PersistentFlags().StringVarP(&context, "context", "c", "", "kubeconfig to output to")
-	createServiceAccount.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "kubeconfig to output to")
-	createServiceAccount.PersistentFlags().StringVarP(&serviceAccountName, "serviceAccountName", "s", "", "kubeconfig to output to")
+	createServiceAccount.PersistentFlags().StringVarP(&context, "context", "c", "", "kubectl context to use")
+	createServiceAccount.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "namespace to create service account in")
+	createServiceAccount.PersistentFlags().StringVarP(&serviceAccountName, "serviceAccountName", "s", "", "service account name")
 
 }

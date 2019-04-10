@@ -1,10 +1,38 @@
 package k8s
 
 import (
+	"fmt"
+	
 	"github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
 	"github.com/armory/spinnaker-tools/internal/pkg/utils"
 	"github.com/fatih/color"
 )
+
+// CreateServiceAccount : Creates the service account (and namespace, if it doesn't already exist)
+// TODO: Handle non-admin service account
+// TODO: Handle pre-existing service account
+func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) (string, error) {
+	if sa.newNamespace {
+		fmt.Println("Creating namespace", sa.Namespace)
+		err := c.createNamespace(ctx, sa.Namespace)
+		if err != nil {
+			color.Red("Unable to create namespace")
+			return "Unable to create namespace", err
+		}
+	}
+
+	// Later will test to see if we want a full cluster-admin user
+	if true {
+		color.Blue("Creating admin service account %s ...", sa.ServiceAccountName)
+		err := c.createAdminServiceAccount(*sa)
+		if err != nil {
+			// color.Red("Unable to create service account.")
+			// ctx.Error("Unable to create service account", err)
+			return "Unable to create service account", err
+		}
+	}
+	return "", nil
+}
 
 // Create namespace in cluster
 // TODO: remove ctx

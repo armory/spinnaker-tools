@@ -14,6 +14,60 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+
+// DefineServiceAccount : Populates all fields of ServiceAccount sa, including the following:
+// * If Namespace is not specified, gets the list of namespaces and prompts to select one or use a new one
+// * If ServiceAccountName is not specified, prompts for the service account name
+//
+// TODO: Be able to pass in values for these at start of execution
+// TODO: Prompt for non-admin service account perms
+func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) (string, error) {
+
+	color.Blue("Getting namespaces ...")
+	namespaceOptions, namespaceNames, err := c.getNamespaces(ctx)
+	if err != nil {
+		return "Unable to get namespaces from cluster", err
+	}
+
+	if sa.Namespace != "" {
+		sa.newNamespace = true
+		// TODO: If prepopulated, do something else
+		for _, namespace := range namespaceNames {
+			if sa.Namespace == namespace {
+				sa.newNamespace = false
+			}
+		}
+	} else {
+		sa.Namespace, sa.newNamespace, err = promptNamespace(namespaceOptions, namespaceNames)
+		if err != nil {
+			return "Namespace not selected", err
+		}
+	}
+
+	// TODO get a current list of service accounts
+	// c.getServiceAccounts(ctx, sa.namespace)
+	// Generally speaking, creating a service account that already exists should not have a negative effect
+
+	if sa.ServiceAccountName != "" {
+		// TODO allow prepopulated, handle pre-existence
+		sa.newServiceAccount = true
+	} else {
+		serviceAccountPrompt := promptui.Prompt{
+			Label:    "What name would you like to give the service account",
+			Default:  "spinnaker-service-account",
+			Validate: k8sValidator,
+		}
+		// TODO: Better catch ^C
+		sa.ServiceAccountName, err = serviceAccountPrompt.Run()
+		if err != nil || len(sa.ServiceAccountName) < 2 {
+			return "Service account name not given", err
+		}
+		sa.newServiceAccount = true
+	}
+	return "", nil
+}
+
+
 // Gets the current list of namespaces from the cluster
 // Returns two items:
 // * Slice of strings of namespaces with metadata (for prompter)
