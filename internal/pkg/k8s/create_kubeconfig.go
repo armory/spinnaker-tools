@@ -22,6 +22,7 @@ import (
 // * Writes it to a file
 // Returns full path to created kubeconfig file, string error, error
 func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa ServiceAccount) (string, string, error) {
+	color.Blue("Getting token for service account ... ")
 	token, serr, err := c.getToken(sa)
 	if err != nil {
 		color.Red("Unable to obtain token for service account. Check you have access to the service account created.")
@@ -35,6 +36,7 @@ func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa 
 		return "", serr, err
 	}
 
+	color.Blue("Getting cluster info ... ")
 	sac := serviceAccountContext{
 		Alias:  sa.Namespace + "-" + sa.ServiceAccountName,
 		Token:  token,
@@ -44,6 +46,7 @@ func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa 
 
 	kc, serr, err := buildKubeconfig(sac)
 
+	color.Blue("Writing kubeconfig ... ")
 	// fmt.Println(kc)
 	f, serr, err := writeKubeconfigFile(kc, filename)
 	if err != nil {

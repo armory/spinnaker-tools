@@ -2,7 +2,8 @@ package k8s
 
 import (
 	"fmt"
-	
+	// "strings"
+
 	"github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
 	"github.com/armory/spinnaker-tools/internal/pkg/utils"
 	"github.com/fatih/color"
@@ -21,14 +22,34 @@ func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 		}
 	}
 
-	// Later will test to see if we want a full cluster-admin user
-	if true {
-		color.Blue("Creating admin service account %s ...", sa.ServiceAccountName)
-		err := c.createAdminServiceAccount(*sa)
+	color.Blue("Creating service account %s ...", sa.ServiceAccountName)
+	err := c.createServiceAccount(*sa)
+	if err != nil {
+		// color.Red("Unable to create service account.")
+		// ctx.Error("Unable to create service account", err)
+		return "Unable to create service account", err
+	}
+	color.Green("Created ServiceAccount %s in namespace %s", sa.ServiceAccountName, sa.Namespace)
+
+	if len(sa.TargetNamespaces) == 0 {
+		color.Blue("Adding cluster-admin binding to service account %s ...", sa.ServiceAccountName)
+		err := c.addAdmin(*sa)
 		if err != nil {
 			// color.Red("Unable to create service account.")
 			// ctx.Error("Unable to create service account", err)
 			return "Unable to create service account", err
+		}
+		color.Green("Created ClusterRoleBinding %s-%s-admin in namespace %s", sa.Namespace, sa.ServiceAccountName, sa.Namespace)
+	} else {
+		for _, target := range sa.TargetNamespaces {
+			color.Blue("Granting %s access to namespace %s", sa.ServiceAccountName, target)
+			err := c.addTargetNamespace(*sa, target)
+			if err != nil {
+				// color.Red("Unable to create service account.")
+				// ctx.Error("Unable to create service account", err)
+				return "Unable to grant access to namespace " + target, err
+			}
+			color.Green("Granted %s full access to namespace %s", sa.Namespace, target)
 		}
 	}
 	return "", nil
@@ -56,14 +77,40 @@ func (c *Cluster) createNamespace(ctx diagnostics.Handler, namespace string) err
 
 // Creates Service Account and ClusterRoleBinding to `cluster-admin`
 // Called by CreateServiceAccount
-func (c *Cluster) createAdminServiceAccount(sa ServiceAccount) error {
-	a := serviceAccountDefinitionAdmin(sa)
-	// fmt.Println(a)
+func (c *Cluster) createServiceAccount(sa ServiceAccount) error {
+	manifest := serviceAccountDefinition(sa)
+	// fmt.Println(manifest)
 
 	options := c.buildCommand([]string{
 		"apply", "-f", "-",
 	})
 
-	return utils.RunCommandInput("kubectl", a, options...)
+	return utils.RunCommandInput("kubectl", manifest, options...)
+	// return nil
+}
+
+// Creates Service Account and ClusterRoleBinding to `cluster-admin`
+// Called by CreateServiceAccount
+func (c *Cluster) addAdmin(sa ServiceAccount) error {
+	manifest := adminClusterRoleBinding(sa)
+	// fmt.Println(manifest)
+
+	options := c.buildCommand([]string{
+		"apply", "-f", "-",
+	})
+
+	return utils.RunCommandInput("kubectl", manifest, options...)
+	// return nil
+}
+
+func (c *Cluster) addTargetNamespace(sa ServiceAccount, target string) error {
+	manifest := namespaceRoleBinding(sa, target)
+	// fmt.Println(manifest)
+
+	options := c.buildCommand([]string{
+		"apply", "-f", "-",
+	})
+
+	return utils.RunCommandInput("kubectl", manifest, options...)
 	// return nil
 }

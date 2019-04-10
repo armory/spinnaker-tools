@@ -19,6 +19,7 @@ import (
 	"github.com/armory/spinnaker-tools/internal/pkg/debug"
 	"github.com/armory/spinnaker-tools/internal/pkg/k8s"
 	"os"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -29,6 +30,8 @@ var destKubeconfig string
 var context string
 var namespace string
 var serviceAccountName string
+// var notAdmin bool
+var targetNamespaces string
 
 // createServiceAccount creates a service account and kubeconfig
 var createServiceAccount = &cobra.Command{
@@ -61,6 +64,12 @@ var createServiceAccount = &cobra.Command{
 		sa := k8s.ServiceAccount{
 			Namespace:          namespace,
 			ServiceAccountName: serviceAccountName,
+			TargetNamespaces:   nil,
+		}
+
+
+		if len(targetNamespaces) != 0 {
+			sa.TargetNamespaces = strings.Split(targetNamespaces, ",")
 		}
 
 		// TODO: Figure out which need pointers and which don't, and remove those that don't
@@ -107,5 +116,7 @@ func init() {
 	createServiceAccount.PersistentFlags().StringVarP(&context, "context", "c", "", "kubectl context to use")
 	createServiceAccount.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "namespace to create service account in")
 	createServiceAccount.PersistentFlags().StringVarP(&serviceAccountName, "serviceAccountName", "s", "", "service account name")
+	// createServiceAccount.PersistentFlags().BoolVarP(&notAdmin, "select-namespaces", "T", false, "don't create service account as cluster-admin")
+	createServiceAccount.PersistentFlags().StringVarP(&targetNamespaces, "target-namespaces", "t", "", "comma-separated list of namespaces to deploy to")
 
 }

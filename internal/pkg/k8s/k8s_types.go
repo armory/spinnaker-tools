@@ -31,8 +31,10 @@ type ServiceAccount struct {
 	ServiceAccountName string
 	newServiceAccount  bool
 	// TODO handle non-cluster-admin service account
-	// admin bool
-	// namespaces []string
+	// Admin bool
+	TargetNamespaces []string
+	// TODO decide if we wanna track existing namespaces
+	// Namespaces       []string
 }
 
 type namespaceJSON struct {
