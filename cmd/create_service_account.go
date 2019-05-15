@@ -85,21 +85,21 @@ var createServiceAccount = &cobra.Command{
 		f, serr, err := cluster.DefineKubeconfig(destKubeconfig, &sa)
 		if err != nil || serr != "" {
 			color.Red(serr)
-			color.Red("Defining output failed, exiting")
+			color.Red("Defining kubeconfig failed, exiting")
 			os.Exit(1)
 		}
 
 		serr, err = cluster.CreateServiceAccount(ctx, &sa)
 		if err != nil || serr != "" {
 			color.Red(serr)
-			color.Red("Defining output failed, exiting")
+			color.Red("Creating service account failed, exiting")
 			os.Exit(1)
 		}
 
 		o, serr, err := cluster.CreateKubeconfig(ctx, f, sa)
 		if err != nil || serr != "" {
 			color.Red(serr)
-			color.Red("Defining output failed, exiting")
+			color.Red("Creating Kubeconfig failed, exiting")
 			os.Exit(1)
 		}
 		color.Green("Created kubeconfig file at %s", o)
