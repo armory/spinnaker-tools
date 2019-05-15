@@ -21,10 +21,10 @@ import (
 //
 // TODO: Be able to pass in values for these at start of execution
 // TODO: Prompt for non-admin service account perms
-func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) (string, error) {
+func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount, verbose bool) (string, error) {
 
 	color.Blue("Getting namespaces ...")
-	namespaceOptions, namespaceNames, err := c.getNamespaces(ctx)
+	namespaceOptions, namespaceNames, err := c.getNamespaces(ctx, verbose)
 	if err != nil {
 		return "Unable to get namespaces from cluster", err
 	}
@@ -38,7 +38,7 @@ func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 			}
 		}
 	} else {
-		sa.Namespace, sa.newNamespace, err = promptNamespace(namespaceOptions, namespaceNames)
+		sa.Namespace, sa.newNamespace, err = promptNamespace(namespaceOptions, namespaceNames, verbose)
 		if err != nil {
 			return "Namespace not selected", err
 		}
@@ -73,13 +73,13 @@ func (c *Cluster) DefineServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 // * Slice of strings of namespaces with metadata (for prompter)
 // * Slice of strings of namespaces only
 // Called by DefineServiceAccount
-func (c *Cluster) getNamespaces(ctx diagnostics.Handler) ([]string, []string, error) {
+func (c *Cluster) getNamespaces(ctx diagnostics.Handler, verbose bool) ([]string, []string, error) {
 	options := c.buildCommand([]string{
 		"get", "namespace",
 		"-o=json",
-	})
+	}, verbose)
 
-	output, serr, err := utils.RunCommand("kubectl", options...)
+	output, serr, err := utils.RunCommand(verbose, "kubectl", options...)
 	if err != nil {
 		ctx.Error(serr.String(), err)
 		color.Red(serr.String())
@@ -115,7 +115,7 @@ func (c *Cluster) getNamespaces(ctx diagnostics.Handler) ([]string, []string, er
 // Prompt for the namespace to use, given list of namespaces (long names and short names)
 // Returns namespace, whether it's a 'new' namespace, and err
 // Called by DefineServiceAccount
-func promptNamespace(options, names []string) (string, bool, error) {
+func promptNamespace(options, names []string, verbose bool) (string, bool, error) {
 	var err error
 	var result string
 	index := -1

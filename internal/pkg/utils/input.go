@@ -4,7 +4,7 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func PromptUntilValid(prompt promptui.Prompt) (string, error) {
+func PromptUntilValid(prompt promptui.Prompt, verbose bool) (string, error) {
 	for {
 		r, err := prompt.Run()
 		if err == nil {

@@ -12,10 +12,10 @@ import (
 // CreateServiceAccount : Creates the service account (and namespace, if it doesn't already exist)
 // TODO: Handle non-admin service account
 // TODO: Handle pre-existing service account
-func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount) (string, error) {
+func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccount, verbose bool) (string, error) {
 	if sa.newNamespace {
 		fmt.Println("Creating namespace", sa.Namespace)
-		err := c.createNamespace(ctx, sa.Namespace)
+		err := c.createNamespace(ctx, sa.Namespace, verbose)
 		if err != nil {
 			color.Red("Unable to create namespace")
 			return "Unable to create namespace", err
@@ -23,7 +23,7 @@ func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 	}
 
 	color.Blue("Creating service account %s ...", sa.ServiceAccountName)
-	err := c.createServiceAccount(*sa)
+	err := c.createServiceAccount(*sa, verbose)
 	if err != nil {
 		// color.Red("Unable to create service account.")
 		// ctx.Error("Unable to create service account", err)
@@ -33,7 +33,7 @@ func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 
 	if len(sa.TargetNamespaces) == 0 {
 		color.Blue("Adding cluster-admin binding to service account %s ...", sa.ServiceAccountName)
-		err := c.addAdmin(*sa)
+		err := c.addAdmin(*sa, verbose)
 		if err != nil {
 			// color.Red("Unable to create service account.")
 			// ctx.Error("Unable to create service account", err)
@@ -43,7 +43,7 @@ func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 	} else {
 		for _, target := range sa.TargetNamespaces {
 			color.Blue("Granting %s access to namespace %s", sa.ServiceAccountName, target)
-			err := c.addTargetNamespace(*sa, target)
+			err := c.addTargetNamespace(*sa, target, verbose)
 			if err != nil {
 				// color.Red("Unable to create service account.")
 				// ctx.Error("Unable to create service account", err)
@@ -58,13 +58,13 @@ func (c *Cluster) CreateServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 // Create namespace in cluster
 // TODO: remove ctx
 // Called by CreateServiceAccount
-func (c *Cluster) createNamespace(ctx diagnostics.Handler, namespace string) error {
+func (c *Cluster) createNamespace(ctx diagnostics.Handler, namespace string, verbose bool) error {
 	options := c.buildCommand([]string{
 		"create",
 		"namespace", namespace,
-	})
+	}, verbose)
 
-	output, serr, err := utils.RunCommand("kubectl", options...)
+	output, serr, err := utils.RunCommand(verbose, "kubectl", options...)
 	if err != nil {
 		ctx.Error(serr.String(), err)
 		color.Red(serr.String())
@@ -77,40 +77,40 @@ func (c *Cluster) createNamespace(ctx diagnostics.Handler, namespace string) err
 
 // Creates Service Account and ClusterRoleBinding to `cluster-admin`
 // Called by CreateServiceAccount
-func (c *Cluster) createServiceAccount(sa ServiceAccount) error {
-	manifest := serviceAccountDefinition(sa)
+func (c *Cluster) createServiceAccount(sa ServiceAccount, verbose bool) error {
+	manifest := serviceAccountDefinition(sa, verbose)
 	// fmt.Println(manifest)
 
 	options := c.buildCommand([]string{
 		"apply", "-f", "-",
-	})
+	}, verbose)
 
-	return utils.RunCommandInput("kubectl", manifest, options...)
+	return utils.RunCommandInput(verbose, "kubectl", manifest, options...)
 	// return nil
 }
 
 // Creates Service Account and ClusterRoleBinding to `cluster-admin`
 // Called by CreateServiceAccount
-func (c *Cluster) addAdmin(sa ServiceAccount) error {
-	manifest := adminClusterRoleBinding(sa)
+func (c *Cluster) addAdmin(sa ServiceAccount, verbose bool) error {
+	manifest := adminClusterRoleBinding(sa, verbose)
 	// fmt.Println(manifest)
 
 	options := c.buildCommand([]string{
 		"apply", "-f", "-",
-	})
+	}, verbose)
 
-	return utils.RunCommandInput("kubectl", manifest, options...)
+	return utils.RunCommandInput(verbose, "kubectl", manifest, options...)
 	// return nil
 }
 
-func (c *Cluster) addTargetNamespace(sa ServiceAccount, target string) error {
-	manifest := namespaceRoleBinding(sa, target)
+func (c *Cluster) addTargetNamespace(sa ServiceAccount, target string, verbose bool) error {
+	manifest := namespaceRoleBinding(sa, target, verbose)
 	// fmt.Println(manifest)
 
 	options := c.buildCommand([]string{
 		"apply", "-f", "-",
-	})
+	}, verbose)
 
-	return utils.RunCommandInput("kubectl", manifest, options...)
+	return utils.RunCommandInput(verbose, "kubectl", manifest, options...)
 	// return nil
 }

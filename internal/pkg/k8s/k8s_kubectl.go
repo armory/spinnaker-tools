@@ -14,8 +14,11 @@ type KubectlVersionDetails struct {
 	Major string `json:"major"`
 }
 
+// TODO: Error handle regexp Compile
 func (kvd *KubectlVersionDetails) GetMinorVersionInt() (int, error) {
-	return strconv.Atoi(kvd.Minor)
+	reg, _ := regexp.Compile("[^0-9]+")
+	minorInt := reg.ReplaceAllString(kvd.Minor, "")
+	return strconv.Atoi(minorInt)
 }
 
 type KubectlVersion struct {
@@ -23,13 +26,14 @@ type KubectlVersion struct {
 }
 
 // GetKubectlVersion gets a machine readable version of kubectl version
-func GetKubectlVersion() (KubectlVersion, error) {
+func GetKubectlVersion(verbose bool) (KubectlVersion, error) {
 	options := []string{
 		"version",
 		"-o=json",
+		"-c",
 	}
 
-	o, stderr, err := utils.RunCommand("kubectl", options...)
+	o, stderr, err := utils.RunCommand(verbose, "kubectl", options...)
 	if err != nil {
 		return KubectlVersion{}, errors.New(stderr.String())
 	}
@@ -56,7 +60,7 @@ func k8sValidator(input string) error {
 }
 
 // Takes a list of options, adds kubeconfig and context
-func (c *Cluster) buildCommand(command []string) []string {
+func (c *Cluster) buildCommand(command []string, verbose bool) []string {
 	options := []string{}
 	if c.KubeconfigFile != "" {
 		options = append(options, "--kubeconfig", c.KubeconfigFile)

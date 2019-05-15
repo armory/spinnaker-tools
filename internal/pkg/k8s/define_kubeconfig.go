@@ -14,7 +14,7 @@ import (
 
 // DefineOutputFile : Prompts for a path for the file to be created (if it is not already set up)
 // TODO: switch to multiple errors
-func (c *Cluster) DefineKubeconfig(filename string, sa *ServiceAccount) (string, string, error) {
+func (c *Cluster) DefineKubeconfig(filename string, sa *ServiceAccount, verbose bool) (string, string, error) {
 	// var f string
 	var fullFilename string
 	var err error

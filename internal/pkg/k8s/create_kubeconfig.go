@@ -21,22 +21,22 @@ import (
 // * Generates a kubeconfig from the above
 // * Writes it to a file
 // Returns full path to created kubeconfig file, string error, error
-func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa ServiceAccount) (string, string, error) {
+func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa ServiceAccount, verbose bool) (string, string, error) {
 	color.Blue("Getting token for service account ... ")
-	token, serr, err := c.getToken(sa)
+	token, serr, err := c.getToken(sa, verbose)
 	if err != nil {
-		color.Red("Unable to obtain token for service account. Check you have access to the service account created.")
-		color.Red(serr)
+		serr = "Unable to obtain token for service account. Check you have access to the service account created.\n" + serr
 		ctx.Error(serr, err)
 		return "", serr, err
 	}
 
-	srv, ca, serr, err := c.getClusterInfo()
+	color.Blue("Getting cluster info ... ")
+	srv, ca, serr, err := c.getClusterInfo(verbose)
 	if err != nil {
+		serr = "Failed to get cluster info:\n" + serr
 		return "", serr, err
 	}
 
-	color.Blue("Getting cluster info ... ")
 	sac := serviceAccountContext{
 		Alias:  sa.Namespace + "-" + sa.ServiceAccountName,
 		Token:  token,
@@ -44,23 +44,27 @@ func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa 
 		CA:     ca,
 	}
 
-	kc, serr, err := buildKubeconfig(sac)
+	color.Blue("Building kubeconfig ... ")
+	kc, serr, err := buildKubeconfig(sac, verbose)
+	if err != nil {
+		serr = "Failed to build kubeconfig:\n" + serr
+		return "", serr, err
+	}
 
 	color.Blue("Writing kubeconfig ... ")
 	// fmt.Println(kc)
-	f, serr, err := writeKubeconfigFile(kc, filename)
+	f, serr, err := writeKubeconfigFile(kc, filename, verbose)
 	if err != nil {
-		fmt.Println("Need error handling")
-		fmt.Println(serr)
+		serr = "Failed to write kubeconfig:\n" + serr
 		return "", serr, err
 	}
 
 	color.Blue("Checking connectivity to the cluster ...")
-	err = checkKubeConfigConnectivity(f)
+	err = checkKubeConfigConnectivity(f, verbose)
 	if err != nil {
-		color.Red("\nAccess to the cluster failed: %v", err)
+		serr = "Connection with generated kubeconfig failed:\n" + serr
 		ctx.Error("Unable to make a kubeconfig for the selected cluster", err)
-		return "", "Unable to connect", err
+		return "", serr, err
 	}
 
 	return f, "", nil
@@ -69,27 +73,29 @@ func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa 
 
 // Returns token, error string, error
 // Called by CreateKubeconfig
-func (c *Cluster) getToken(sa ServiceAccount) (string, string, error) {
+func (c *Cluster) getToken(sa ServiceAccount, verbose bool) (string, string, error) {
 	options1 := c.buildCommand([]string{
 		"get", "serviceaccount", sa.ServiceAccountName,
 		"-n", sa.Namespace,
 		"-o", "jsonpath={.secrets[0].name}",
-	})
+	}, verbose)
 
-	o, serr, err := utils.RunCommand("kubectl", options1...)
+	o, bserr, err := utils.RunCommand(verbose, "kubectl", options1...)
 	if err != nil {
-		return "", serr.String(), err
+		serr := "Get secret name failed:\n" + bserr.String()
+		return "", serr, err
 	}
 
 	options2 := c.buildCommand([]string{
 		"get", "secret", o.String(),
 		"-n", sa.Namespace,
 		"-o", "jsonpath={.data.token}",
-	})
+	}, verbose)
 
-	t, serr, err := utils.RunCommand("kubectl", options2...)
+	t, bserr, err := utils.RunCommand(verbose, "kubectl", options2...)
 	if err != nil {
-		return "", serr.String(), err
+		serr := "Get secret failed:\n" + bserr.String()
+		return "", serr, err
 	}
 	b, err := base64.StdEncoding.DecodeString(t.String())
 	if err != nil {
@@ -102,7 +108,7 @@ func (c *Cluster) getToken(sa ServiceAccount) (string, string, error) {
 // Called by CreateKubeconfig
 // TODO: verify permissions
 // TODO: if file exists, prompt for overwrite or new file
-func writeKubeconfigFile(kc string, f string) (string, string, error) {
+func writeKubeconfigFile(kc string, f string, verbose bool) (string, string, error) {
 
 	// moved to DefineOutputFile
 	// f := filepath.Join(os.Getenv("PWD"), filename)
@@ -116,11 +122,14 @@ func writeKubeconfigFile(kc string, f string) (string, string, error) {
 
 // Returns server URL, CA, string error, error
 // Called by CreateKubeconfig
-func (c *Cluster) getClusterInfo() (string, string, string, error) {
+func (c *Cluster) getClusterInfo(verbose bool) (string, string, string, error) {
 
-	kubectlVersion, err := GetKubectlVersion()
+	kubectlVersion, err := GetKubectlVersion(verbose)
 	if err != nil {
-		return "", "", "", err
+		return "", "", "Unable to get kubectl version", err
+	}
+	if verbose {
+		fmt.Println(kubectlVersion)
 	}
 
 	path := fmt.Sprintf("{.clusters[?(@.name=='%s')].cluster['server','certificate-authority-data']}", c.Context.ClusterName)
@@ -128,17 +137,18 @@ func (c *Cluster) getClusterInfo() (string, string, string, error) {
 	options := c.buildCommand([]string{
 		"config", "view", "--raw",
 		"-o", "jsonpath=" + path,
-	})
+	}, verbose)
 
-	o, serr, err := utils.RunCommand("kubectl", options...)
+	o, bserr, err := utils.RunCommand(verbose, "kubectl", options...)
 	if err != nil {
-		return "", "", serr.String(), err
+		serr := "Get config failed:\n" + bserr.String()
+		return "", "", serr, err
 	}
 	s := o.String()
 	// look for the first space in the output
 	i := strings.Index(s, " ")
 	if len(s) < 5 || i < 3 {
-		return "", "", "", errors.New("Unexpected return format for cluster properties")
+		return "", "", "Need more info", errors.New("Unexpected return format for cluster properties")
 	}
 
 	// cluster server info is before the first space, denoted by i
@@ -147,7 +157,7 @@ func (c *Cluster) getClusterInfo() (string, string, string, error) {
 
 	minorVersion, err := kubectlVersion.ClientVersion.GetMinorVersionInt()
 	if err != nil {
-		return "", "", "", err
+		return "", "", "Unable to get minor version", err
 	}
 
 	switch {
@@ -174,7 +184,7 @@ func (c *Cluster) getClusterInfo() (string, string, string, error) {
 
 // Validates a kubeconfig file
 // Called by CreateKubeconfig
-func checkKubeConfigConnectivity(f string) error {
+func checkKubeConfigConnectivity(f string, verbose bool) error {
 	_, err := exec.Command("kubectl", "--kubeconfig", f, "get", "pods").Output()
 	return err
 }
