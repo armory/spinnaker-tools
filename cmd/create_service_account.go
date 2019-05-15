@@ -32,6 +32,7 @@ var namespace string
 var serviceAccountName string
 // var notAdmin bool
 var targetNamespaces string
+var verbose bool
 
 // createServiceAccount creates a service account and kubeconfig
 var createServiceAccount = &cobra.Command{
@@ -54,10 +55,11 @@ var createServiceAccount = &cobra.Command{
 			Context:        k8s.ClusterContext{ContextName: context},
 		}
 		// TODO: change parameters
-		serr, err := cluster.DefineCluster(ctx)
+		serr, err := cluster.DefineCluster(ctx, verbose)
 		if err != nil || serr != "" {
-			color.Red(serr)
 			color.Red("Defining cluster failed, exiting")
+			color.Red(serr)
+			color.Red(err.Error())
 			os.Exit(1)
 		}
 
@@ -75,31 +77,35 @@ var createServiceAccount = &cobra.Command{
 		// TODO: Figure out which need pointers and which don't, and remove those that don't
 		// TODO: each of these should have some error handling built in
 
-		serr, err = cluster.DefineServiceAccount(ctx, &sa)
+		serr, err = cluster.DefineServiceAccount(ctx, &sa, verbose)
 		if err != nil || serr != "" {
-			color.Red(serr)
 			color.Red("Defining service account failed, exiting")
+			color.Red(serr)
+			color.Red(err.Error())
 			os.Exit(1)
 		}
 
-		f, serr, err := cluster.DefineKubeconfig(destKubeconfig, &sa)
+		f, serr, err := cluster.DefineKubeconfig(destKubeconfig, &sa, verbose)
 		if err != nil || serr != "" {
+			color.Red("Defining kubeconfig failed, exiting")
 			color.Red(serr)
-			color.Red("Defining output failed, exiting")
+			color.Red(err.Error())
 			os.Exit(1)
 		}
 
-		serr, err = cluster.CreateServiceAccount(ctx, &sa)
+		serr, err = cluster.CreateServiceAccount(ctx, &sa, verbose)
 		if err != nil || serr != "" {
+			color.Red("Creating service account failed, exiting")
 			color.Red(serr)
-			color.Red("Defining output failed, exiting")
+			color.Red(err.Error())
 			os.Exit(1)
 		}
 
-		o, serr, err := cluster.CreateKubeconfig(ctx, f, sa)
+		o, serr, err := cluster.CreateKubeconfig(ctx, f, sa, verbose)
 		if err != nil || serr != "" {
+			color.Red("Creating Kubeconfig failed, exiting")
 			color.Red(serr)
-			color.Red("Defining output failed, exiting")
+			color.Red(err.Error())
 			os.Exit(1)
 		}
 		color.Green("Created kubeconfig file at %s", o)
@@ -118,5 +124,6 @@ func init() {
 	createServiceAccount.PersistentFlags().StringVarP(&serviceAccountName, "serviceAccountName", "s", "", "service account name")
 	// createServiceAccount.PersistentFlags().BoolVarP(&notAdmin, "select-namespaces", "T", false, "don't create service account as cluster-admin")
 	createServiceAccount.PersistentFlags().StringVarP(&targetNamespaces, "target-namespaces", "t", "", "comma-separated list of namespaces to deploy to")
+	createServiceAccount.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 
 }

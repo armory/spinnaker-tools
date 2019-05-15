@@ -18,7 +18,7 @@ import (
 // May come in with a KubeconfigFile (defaults to regular if not)
 // May come in with a contextName; otherwise prompt for one
 // TODO: Use KUBECONFIG env variable
-func (c *Cluster) DefineCluster(ctx diagnostics.Handler) (string, error) {
+func (c *Cluster) DefineCluster(ctx diagnostics.Handler, verbose bool) (string, error) {
 	if c.KubeconfigFile != "" {
 		if strings.HasPrefix(c.KubeconfigFile, "~/") {
 			c.KubeconfigFile = filepath.Join(os.Getenv("HOME"), c.KubeconfigFile[2:])
@@ -42,7 +42,7 @@ func (c *Cluster) DefineCluster(ctx diagnostics.Handler) (string, error) {
 		}
 	}
 
-	serr, err := c.chooseContext(ctx)
+	serr, err := c.chooseContext(ctx, verbose)
 	if err != nil {
 		return serr, err
 	}
@@ -53,10 +53,10 @@ func (c *Cluster) DefineCluster(ctx diagnostics.Handler) (string, error) {
 // Should get all contexts, and then prompt to select one
 // TODO: remove ctx
 // Called by GetCluster
-func (c *Cluster) chooseContext(ctx diagnostics.Handler) (string, error) {
+func (c *Cluster) chooseContext(ctx diagnostics.Handler, verbose bool) (string, error) {
 
 	// Get list of contexts
-	contexts, serr, err := c.getContexts()
+	contexts, serr, err := c.getContexts(verbose)
 	if err != nil {
 		fmt.Println(serr)
 		return serr, err
@@ -96,13 +96,13 @@ func (c *Cluster) chooseContext(ctx diagnostics.Handler) (string, error) {
 	return "", nil
 }
 
-func (c *Cluster) getContexts() ([]ClusterContext, string, error) {
+func (c *Cluster) getContexts(verbose bool) ([]ClusterContext, string, error) {
 	options := []string{
 		"--kubeconfig", c.KubeconfigFile,
 		"config", "get-contexts",
 	}
 
-	b, _, err := utils.RunCommand("kubectl", options...)
+	b, _, err := utils.RunCommand(verbose, "kubectl", options...)
 	if err != nil {
 		// ctx.Error("Error getting cluster name", err)
 		return nil, "Error getting contexts - kubectl command failed", err

@@ -6,7 +6,7 @@ import (
   "text/template"
 )
 
-func buildKubeconfig(sac serviceAccountContext) (string, string, error) {
+func buildKubeconfig(sac serviceAccountContext, verbose bool) (string, string, error) {
   var tpl bytes.Buffer
 
   t, err := template.New("KubeconfigTemplate").Parse(
@@ -46,7 +46,7 @@ users:
 }
 
 // Service account only
-func serviceAccountDefinition(sa ServiceAccount) string {
+func serviceAccountDefinition(sa ServiceAccount, verbose bool) string {
   var tpl bytes.Buffer
 
   t, err := template.New("ServiceAccountManifest").Parse(
@@ -74,7 +74,7 @@ metadata:
 }
 
 // Returns the YAML manifest to bind cluster-admin to a service account
-func adminClusterRoleBinding(sa ServiceAccount) string {
+func adminClusterRoleBinding(sa ServiceAccount, verbose bool) string {
   var tpl bytes.Buffer
 
   t, err := template.New("ClusterRoleBindingManifest").Parse(
@@ -110,7 +110,7 @@ subjects:
 
 // Returns the YAML manifest to bind cluster-admin to a service account
 // Includes namespace, role, and binding
-func namespaceRoleBinding(sa ServiceAccount, target string) string {
+func namespaceRoleBinding(sa ServiceAccount, target string, verbose bool) string {
   var tpl bytes.Buffer
 
   binding := map[string]string{
