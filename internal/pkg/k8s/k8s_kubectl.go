@@ -30,7 +30,7 @@ func GetKubectlVersion(verbose bool) (KubectlVersion, error) {
 	options := []string{
 		"version",
 		"-o=json",
-		"-c",
+		"--client",
 	}
 
 	o, stderr, err := utils.RunCommand(verbose, "kubectl", options...)
