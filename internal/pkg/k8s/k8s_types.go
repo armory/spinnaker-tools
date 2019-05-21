@@ -1,16 +1,5 @@
 package k8s
 
-import (
-	// "fmt"
-	// "os"
-	// "path/filepath"
-
-	// "github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
-	// "github.com/fatih/color"
-
-	// "github.com/manifoldco/promptui"
-)
-
 // Cluster : Everything needed to talk to a K8s cluster
 // TODO: Maybe make a constructor so these can be private
 type Cluster struct {
@@ -46,6 +35,15 @@ type namespaceJSON struct {
 		Status struct {
 			Phase string `json:"phase"`
 		} `json:"status"`
+	} `json:"items"`
+}
+
+type serviceAccountsJSON struct {
+	Items []struct {
+		Metadata struct {
+			Name              string `json:"name"`
+			CreationTimestamp string `json:"creationTimestamp"`
+		} `json:"metadata"`
 	} `json:"items"`
 }
 

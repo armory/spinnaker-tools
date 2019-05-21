@@ -19,27 +19,16 @@ import (
 	"github.com/armory/spinnaker-tools/internal/pkg/debug"
 	"github.com/armory/spinnaker-tools/internal/pkg/k8s"
 	"os"
-	"strings"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
-var sourceKubeconfig string
-var destKubeconfig string
-var context string
-var namespace string
-var serviceAccountName string
-var targetNamespaces string
-var verbose bool
-
-// createServiceAccount creates a service account and kubeconfig
-var createServiceAccount = &cobra.Command{
-	Use:   "create-service-account",
-	Short: "Create a service account and Kubeconfig",
-	Long: `Given a Kubernetes kubeconfig and context, will create the following:
-	* Kubernetes ServiceAccount
-	* Kubernetes ClusterRole granting the service account access to cluster-admin
+// createKubeconfig creates a kubeconfig from an existing service account
+var createKubeconfig = &cobra.Command{
+	Use:   "create-kubeconfig",
+	Short: "Create a kubeconfig from an existing Service Account",
+	Long: `Given a Kubernetes service acount, will create the following:
 	* kubeconfig file with credentials for the ServiceAccount`,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -68,16 +57,12 @@ var createServiceAccount = &cobra.Command{
 			TargetNamespaces:   nil,
 		}
 
-		if len(targetNamespaces) != 0 {
-			sa.TargetNamespaces = strings.Split(targetNamespaces, ",")
-		}
-
 		// TODO: Figure out which need pointers and which don't, and remove those that don't
 		// TODO: each of these should have some error handling built in
 
-		serr, err = cluster.DefineServiceAccount(ctx, &sa, verbose)
+		serr, err = cluster.SelectServiceAccount(ctx, &sa, verbose)
 		if err != nil || serr != "" {
-			color.Red("Defining service account failed, exiting")
+			color.Red("Selecting service account failed, exiting")
 			color.Red(serr)
 			color.Red(err.Error())
 			os.Exit(1)
@@ -86,14 +71,6 @@ var createServiceAccount = &cobra.Command{
 		f, serr, err := cluster.DefineKubeconfig(destKubeconfig, &sa, verbose)
 		if err != nil || serr != "" {
 			color.Red("Defining kubeconfig failed, exiting")
-			color.Red(serr)
-			color.Red(err.Error())
-			os.Exit(1)
-		}
-
-		serr, err = cluster.CreateServiceAccount(ctx, &sa, verbose)
-		if err != nil || serr != "" {
-			color.Red("Creating service account failed, exiting")
 			color.Red(serr)
 			color.Red(err.Error())
 			os.Exit(1)
@@ -111,17 +88,15 @@ var createServiceAccount = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(createServiceAccount)
+	rootCmd.AddCommand(createKubeconfig)
 
 	// TODO: flag for namespace
 	// TODO: flag for service account name
-	createServiceAccount.PersistentFlags().StringVarP(&sourceKubeconfig, "kubeconfig", "i", "", "kubeconfig to start with")
-	createServiceAccount.PersistentFlags().StringVarP(&destKubeconfig, "output", "o", "", "kubeconfig to output to")
-	createServiceAccount.PersistentFlags().StringVarP(&context, "context", "c", "", "kubectl context to use")
-	createServiceAccount.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "namespace to create service account in")
-	createServiceAccount.PersistentFlags().StringVarP(&serviceAccountName, "serviceAccountName", "s", "", "service account name")
-	// createServiceAccount.PersistentFlags().BoolVarP(&notAdmin, "select-namespaces", "T", false, "don't create service account as cluster-admin")
-	createServiceAccount.PersistentFlags().StringVarP(&targetNamespaces, "target-namespaces", "t", "", "comma-separated list of namespaces to deploy to")
-	createServiceAccount.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	createKubeconfig.PersistentFlags().StringVarP(&sourceKubeconfig, "kubeconfig", "i", "", "kubeconfig to start with")
+	createKubeconfig.PersistentFlags().StringVarP(&destKubeconfig, "output", "o", "", "kubeconfig to output to")
+	createKubeconfig.PersistentFlags().StringVarP(&context, "context", "c", "", "kubectl context to use")
+	createKubeconfig.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "namespace to create service account in")
+	createKubeconfig.PersistentFlags().StringVarP(&serviceAccountName, "serviceAccountName", "s", "", "service account name")
+	createKubeconfig.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 
 }
