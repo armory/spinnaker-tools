@@ -30,7 +30,6 @@ var destKubeconfig string
 var context string
 var namespace string
 var serviceAccountName string
-// var notAdmin bool
 var targetNamespaces string
 var verbose bool
 
@@ -68,7 +67,6 @@ var createServiceAccount = &cobra.Command{
 			ServiceAccountName: serviceAccountName,
 			TargetNamespaces:   nil,
 		}
-
 
 		if len(targetNamespaces) != 0 {
 			sa.TargetNamespaces = strings.Split(targetNamespaces, ",")

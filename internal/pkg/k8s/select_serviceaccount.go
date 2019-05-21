@@ -3,10 +3,10 @@ package k8s
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"text/tabwriter"
-	"errors"
 
 	"github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
 	"github.com/armory/spinnaker-tools/internal/pkg/utils"
@@ -14,7 +14,6 @@ import (
 
 	"github.com/manifoldco/promptui"
 )
-
 
 // DefineServiceAccount : Populates all fields of ServiceAccount sa, including the following:
 // * If Namespace is not specified, gets the list of namespaces and prompts to select one or use a new one
@@ -48,7 +47,7 @@ func (c *Cluster) SelectServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 		}
 	}
 
-	if ! namespaceExists {
+	if !namespaceExists {
 		return "Provided namespace does not exist", errors.New("Namespace not found: " + sa.Namespace)
 	}
 
@@ -75,7 +74,7 @@ func (c *Cluster) SelectServiceAccount(ctx diagnostics.Handler, sa *ServiceAccou
 		}
 	}
 
-	if ! serviceAccountExists {
+	if !serviceAccountExists {
 		return "Provided service account does not exist", errors.New("Service Account not found: " + sa.ServiceAccountName)
 	}
 
@@ -132,8 +131,8 @@ func promptGenericSelect(label string, options, names []string, verbose bool) (s
 
 	for index < 0 {
 		getNamespacePrompt := promptui.Select{
-			Label:    label,
-			Items:    options,
+			Label: label,
+			Items: options,
 		}
 
 		index, result, err = getNamespacePrompt.Run()

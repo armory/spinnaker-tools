@@ -1,14 +1,14 @@
 package k8s
 
 import (
-	// "fmt"
-	// "os"
-	// "path/filepath"
+// "fmt"
+// "os"
+// "path/filepath"
 
-	// "github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
-	// "github.com/fatih/color"
+// "github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
+// "github.com/fatih/color"
 
-	// "github.com/manifoldco/promptui"
+// "github.com/manifoldco/promptui"
 )
 
 // Cluster : Everything needed to talk to a K8s cluster
