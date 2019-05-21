@@ -49,6 +49,15 @@ type namespaceJSON struct {
 	} `json:"items"`
 }
 
+type serviceAccountsJSON struct {
+	Items []struct {
+		Metadata struct {
+			Name              string `json:"name"`
+			CreationTimestamp string `json:"creationTimestamp"`
+		} `json:"metadata"`
+	} `json:"items"`
+}
+
 type serviceAccountContext struct {
 	CA     string
 	Server string
