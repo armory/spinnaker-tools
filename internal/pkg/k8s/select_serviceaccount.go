@@ -15,8 +15,8 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-// DefineServiceAccount : Populates all fields of ServiceAccount sa, including the following:
-// * If Namespace is not specified, gets the list of namespaces and prompts to select one or use a new one
+// SelectServiceAccount : Populates all fields of ServiceAccount sa, including the following:
+// * If Namespace is not specified, gets the list of namespaces and prompts to select one
 // * If ServiceAccountName is not specified, prompts for the service account name
 //
 // TODO: Be able to pass in values for these at start of execution
