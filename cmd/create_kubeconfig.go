@@ -19,20 +19,10 @@ import (
 	"github.com/armory/spinnaker-tools/internal/pkg/debug"
 	"github.com/armory/spinnaker-tools/internal/pkg/k8s"
 	"os"
-	// "strings"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
-
-// var sourceKubeconfig string
-// var destKubeconfig string
-// var context string
-// var namespace string
-// var serviceAccountName string
-// // var notAdmin bool
-// var targetNamespaces string
-// var verbose bool
 
 // createKubeconfig creates a kubeconfig from an existing service account
 var createKubeconfig = &cobra.Command{
@@ -67,11 +57,6 @@ var createKubeconfig = &cobra.Command{
 			TargetNamespaces:   nil,
 		}
 
-
-		// if len(targetNamespaces) != 0 {
-		// 	sa.TargetNamespaces = strings.Split(targetNamespaces, ",")
-		// }
-
 		// TODO: Figure out which need pointers and which don't, and remove those that don't
 		// TODO: each of these should have some error handling built in
 
@@ -90,14 +75,6 @@ var createKubeconfig = &cobra.Command{
 			color.Red(err.Error())
 			os.Exit(1)
 		}
-
-		// serr, err = cluster.CreateServiceAccount(ctx, &sa, verbose)
-		// if err != nil || serr != "" {
-		// 	color.Red("Creating service account failed, exiting")
-		// 	color.Red(serr)
-		// 	color.Red(err.Error())
-		// 	os.Exit(1)
-		// }
 
 		o, serr, err := cluster.CreateKubeconfig(ctx, f, sa, verbose)
 		if err != nil || serr != "" {
@@ -120,8 +97,6 @@ func init() {
 	createKubeconfig.PersistentFlags().StringVarP(&context, "context", "c", "", "kubectl context to use")
 	createKubeconfig.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "namespace to create service account in")
 	createKubeconfig.PersistentFlags().StringVarP(&serviceAccountName, "serviceAccountName", "s", "", "service account name")
-	// createServiceAccount.PersistentFlags().BoolVarP(&notAdmin, "select-namespaces", "T", false, "don't create service account as cluster-admin")
-	// createKubeconfig.PersistentFlags().StringVarP(&targetNamespaces, "target-namespaces", "t", "", "comma-separated list of namespaces to deploy to")
 	createKubeconfig.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 
 }

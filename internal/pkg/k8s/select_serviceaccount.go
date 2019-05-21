@@ -96,15 +96,12 @@ func (c *Cluster) getServiceAccounts(ctx diagnostics.Handler, sa *ServiceAccount
 		return nil, nil, err
 	}
 
-	// fmt.Println(output)
 	var n serviceAccountsJSON
 	if err := json.NewDecoder(output).Decode(&n); err != nil {
 		ctx.Error("Cannot decode JSON for getting namespaces", err)
 		color.Red("Could not get namespaces")
 		return nil, nil, err
 	}
-
-	// fmt.Println(n)
 
 	// Used to make spacing more pretty
 	b := bytes.NewBufferString("")
@@ -121,11 +118,6 @@ func (c *Cluster) getServiceAccounts(ctx diagnostics.Handler, sa *ServiceAccount
 	}
 
 	w.Flush()
-
-	// fmt.Println(names)
-	// fmt.Println(w)
-
-	// w.Flush()
 
 	return strings.Split(b.String(), "\n"), names, nil
 }
