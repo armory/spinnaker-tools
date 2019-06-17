@@ -96,7 +96,7 @@ func init() {
 	createKubeconfig.PersistentFlags().StringVarP(&destKubeconfig, "output", "o", "", "kubeconfig to output to")
 	createKubeconfig.PersistentFlags().StringVarP(&context, "context", "c", "", "kubectl context to use")
 	createKubeconfig.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "namespace to create service account in")
-	createKubeconfig.PersistentFlags().StringVarP(&serviceAccountName, "serviceAccountName", "s", "", "service account name")
+	createKubeconfig.PersistentFlags().StringVarP(&serviceAccountName, "service-account-name", "s", "", "service account name")
 	createKubeconfig.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 
 }

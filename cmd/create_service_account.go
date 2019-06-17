@@ -119,7 +119,7 @@ func init() {
 	createServiceAccount.PersistentFlags().StringVarP(&destKubeconfig, "output", "o", "", "kubeconfig to output to")
 	createServiceAccount.PersistentFlags().StringVarP(&context, "context", "c", "", "kubectl context to use")
 	createServiceAccount.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "namespace to create service account in")
-	createServiceAccount.PersistentFlags().StringVarP(&serviceAccountName, "serviceAccountName", "s", "", "service account name")
+	createServiceAccount.PersistentFlags().StringVarP(&serviceAccountName, "service-account-name", "s", "", "service account name")
 	// createServiceAccount.PersistentFlags().BoolVarP(&notAdmin, "select-namespaces", "T", false, "don't create service account as cluster-admin")
 	createServiceAccount.PersistentFlags().StringVarP(&targetNamespaces, "target-namespaces", "t", "", "comma-separated list of namespaces to deploy to")
 	createServiceAccount.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
