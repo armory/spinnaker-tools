@@ -15,6 +15,69 @@ import (
 	"github.com/armory/spinnaker-tools/internal/pkg/diagnostics"
 )
 
+
+// CreateKubeconfig : Creates the kubeconfig, by doing the following:
+// * Get the token for the service account
+// * Get information about the current kubeconfig
+// * Generates a kubeconfig from the above
+// * Writes it to a file
+// Returns full path to created kubeconfig file, string error, error
+func (c *Cluster) CreateKubeconfigUsingKubectl(ctx diagnostics.Handler, filename string, sa ServiceAccount, verbose bool) (string, string, error) {
+	color.Blue("Getting token for service account ... ")
+	token, serr, err := c.getToken(sa, verbose)
+	if err != nil {
+		serr = "Unable to obtain token for service account. Check you have access to the service account created.\n" + serr
+		ctx.Error(serr, err)
+		return "", serr, err
+	}
+
+	color.Blue("Cloning kubeconfig ... ")
+	serr, err := utils.RunCommandToFile(verbose, "kubectl", filename + ".full.tmp", ["config", "view", "--raw"])
+	if err != nil {
+		return "Unable to clone kubeconfig", serr, err
+	}
+
+
+
+	// srv, ca, serr, err := c.getClusterInfo(verbose)
+	// if err != nil {
+	// 	serr = "Failed to get cluster info:\n" + serr
+	// 	return "", serr, err
+	// }
+
+	// sac := serviceAccountContext{
+	// 	Alias:  sa.Namespace + "-" + sa.ServiceAccountName,
+	// 	Token:  token,
+	// 	Server: srv,
+	// 	CA:     ca,
+	// }
+
+	// color.Blue("Building kubeconfig ... ")
+	// kc, serr, err := buildKubeconfig(sac, verbose)
+	// if err != nil {
+	// 	serr = "Failed to build kubeconfig:\n" + serr
+	// 	return "", serr, err
+	// }
+
+	// color.Blue("Writing kubeconfig ... ")
+	// // fmt.Println(kc)
+	// f, serr, err := writeKubeconfigFile(kc, filename, verbose)
+	// if err != nil {
+	// 	serr = "Failed to write kubeconfig:\n" + serr
+	// 	return "", serr, err
+	// }
+
+	// color.Blue("Checking connectivity to the cluster ...")
+	// err = checkKubeConfigConnectivity(f, verbose)
+	// if err != nil {
+	// 	serr = "Connection with generated kubeconfig failed:\n" + serr
+	// 	ctx.Error("Unable to make a kubeconfig for the selected cluster", err)
+	// 	return "", serr, err
+	// }
+
+	return f, "", nil
+}
+
 // CreateKubeconfig : Creates the kubeconfig, by doing the following:
 // * Get the token for the service account
 // * Get information about the current kubeconfig

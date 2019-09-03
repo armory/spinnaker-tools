@@ -25,6 +25,33 @@ func RunCommand(verbose bool, command string, args ...string) (*bytes.Buffer, *b
 	return out, serr, nil
 }
 
+func RunCommandToFile(verbose bool, command string, filename string, args ...string) (string, error) {
+	if verbose {
+		fmt.Println(command)
+		fmt.Println(args)
+		fmt.Println(filename) // Todo add additional stuff
+	}
+
+	cmd := exec.Command(command, args...)
+	outfile, err := os.Create(filename)
+	if err != nil {
+		return "Unable to create output file", err
+	}
+	defer outfile.Close()
+
+	serr := &bytes.Buffer{}
+	cmd.Stdout = outfile
+	cmd.Stderr = serr
+
+	err = cmd.Run()
+	if err != nil {
+		return serr.String(), err
+	}
+
+	cmd.Wait()
+	return "", nil
+}
+
 // Need better passback here
 func RunCommandInput(verbose bool, command string, stdin string, args ...string) error {
 	if verbose {
