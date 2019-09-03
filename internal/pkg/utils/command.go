@@ -2,10 +2,10 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"fmt"
 )
 
 func RunCommand(verbose bool, command string, args ...string) (*bytes.Buffer, *bytes.Buffer, error) {
@@ -25,6 +25,25 @@ func RunCommand(verbose bool, command string, args ...string) (*bytes.Buffer, *b
 	return out, serr, nil
 }
 
+// String return version
+func RunCommandS(verbose bool, command string, args ...string) (string, string, error) {
+	if verbose {
+		fmt.Println(command)
+		fmt.Println(args)
+	}
+	cmd := exec.Command(command, args...)
+	out := &bytes.Buffer{}
+	serr := &bytes.Buffer{}
+	cmd.Stdout = out
+	cmd.Stderr = serr
+	err := cmd.Run()
+	if err != nil {
+		return "", serr.String(), err
+	}
+	return out.String(), serr.String(), nil
+}
+
+// TODO determine if this should return a *bytes.Buffer instead of a string
 func RunCommandToFile(verbose bool, command string, filename string, args ...string) (string, error) {
 	if verbose {
 		fmt.Println(command)
