@@ -25,26 +25,8 @@ func RunCommand(verbose bool, command string, args ...string) (*bytes.Buffer, *b
 	return out, serr, nil
 }
 
-// String return version
-func RunCommandS(verbose bool, command string, args ...string) (string, string, error) {
-	if verbose {
-		fmt.Println(command)
-		fmt.Println(args)
-	}
-	cmd := exec.Command(command, args...)
-	out := &bytes.Buffer{}
-	serr := &bytes.Buffer{}
-	cmd.Stdout = out
-	cmd.Stderr = serr
-	err := cmd.Run()
-	if err != nil {
-		return "", serr.String(), err
-	}
-	return out.String(), serr.String(), nil
-}
-
 // TODO determine if this should return a *bytes.Buffer instead of a string
-func RunCommandToFile(verbose bool, command string, filename string, args ...string) (string, error) {
+func RunCommandToFile(verbose bool, command string, filename string, args ...string) (*bytes.Buffer, error) {
 	if verbose {
 		fmt.Println(command)
 		fmt.Println(args)
@@ -54,7 +36,7 @@ func RunCommandToFile(verbose bool, command string, filename string, args ...str
 	cmd := exec.Command(command, args...)
 	outfile, err := os.Create(filename)
 	if err != nil {
-		return "Unable to create output file", err
+		return bytes.NewBufferString("Unable to create output file"), err
 	}
 	defer outfile.Close()
 
@@ -64,11 +46,11 @@ func RunCommandToFile(verbose bool, command string, filename string, args ...str
 
 	err = cmd.Run()
 	if err != nil {
-		return serr.String(), err
+		return serr, err
 	}
 
 	cmd.Wait()
-	return "", nil
+	return nil, nil
 }
 
 // Need better passback here

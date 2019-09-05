@@ -39,160 +39,161 @@ func (c *Cluster) CreateKubeconfigUsingKubectl(ctx diagnostics.Handler, filename
 
 	// Clone kubeconfig
 	color.Blue("Cloning kubeconfig ... ")
-	serr, err = utils.RunCommandToFile(verbose, "kubectl", filename+".tmp",
+	bserr, err := utils.RunCommandToFile(verbose, "kubectl", filename+".tmp",
 		"--kubeconfig", c.KubeconfigFile,
 		"config",
 		"view", "--raw")
 	if err != nil {
-		return "Unable to clone kubeconfig", serr, err
+		return "", "Unable to clone kubeconfig:\n" + bserr.String(), err
 	}
 
 	// Rename context
 	color.Blue("Renaming context in kubeconfig ... ")
-	o, serr, err := utils.RunCommandS(verbose, "kubectl",
+	o, bserr, err := utils.RunCommand(verbose, "kubectl",
 		"--kubeconfig", filename+".tmp",
 		"config",
 		"rename-context", c.Context.ContextName, "spinnaker")
 	if err != nil {
-		return "Unable to rename kubeconfig context", serr, err
+		return "", "Unable to rename kubeconfig context:\n" + bserr.String(), err
 	}
 
 	if verbose {
-		color.Yellow(o)
+		color.Yellow(o.String())
 	}
 
 	// Switch context
 	color.Blue("Switching context in kubeconfig ... ")
-	o, serr, err = utils.RunCommandS(verbose, "kubectl",
+	o, bserr, err = utils.RunCommand(verbose, "kubectl",
 		"--kubeconfig", filename+".tmp",
 		"config",
 		"use-context", "spinnaker")
 	if err != nil {
-		return "Unable to switch kubeconfig context", serr, err
+		return "", "Unable to switch kubeconfig context:\n" + bserr.String(), err
 	}
 
 	if verbose {
-		color.Yellow(o)
+		color.Yellow(o.String())
 	}
 
 	// Create token user
 	color.Blue("Creating token user in kubeconfig ... ")
-	o, serr, err = utils.RunCommandS(verbose, "kubectl",
+	o, bserr, err = utils.RunCommand(verbose, "kubectl",
 		"--kubeconfig", filename+".tmp",
 		"config",
 		"set-credentials", "spinnaker-token-user", "--token", token)
 	if err != nil {
-		return "Unable to create token user", serr, err
+		return "", "Unable to create token user:\n" + bserr.String(), err
 	}
 
 	if verbose {
-		color.Yellow(o)
+		color.Yellow(o.String())
 	}
 
 	// Update context to use token user
 	color.Blue("Updating context to use token user in kubeconfig ... ")
-	o, serr, err = utils.RunCommandS(verbose, "kubectl",
+	o, bserr, err = utils.RunCommand(verbose, "kubectl",
 		"--kubeconfig", filename+".tmp",
 		"config",
 		"set-context", "spinnaker", "--user", "spinnaker-token-user")
 	if err != nil {
-		return "Unable to modify context", serr, err
+		return "", "Unable to modify context:\n" + bserr.String(), err
 	}
 
 	if verbose {
-		color.Yellow(o)
+		color.Yellow(o.String())
 	}
 
 	// Switch context namespace
 	color.Blue("Updating context with namespace in kubeconfig ... ")
-	o, serr, err = utils.RunCommandS(verbose, "kubectl",
+	o, bserr, err = utils.RunCommand(verbose, "kubectl",
 		"--kubeconfig", filename+".tmp",
 		"config",
 		"set-context", "spinnaker", "--namespace", sa.Namespace)
 	if err != nil {
-		return "Unable to modify context", serr, err
+		return "", "Unable to modify context:\n" + bserr.String(), err
 	}
 
 	if verbose {
-		color.Yellow(o)
+		color.Yellow(o.String())
 	}
 
 	// Minify
 	color.Blue("Minifying kubeconfig ... ")
-	serr, err = utils.RunCommandToFile(verbose, "kubectl", filename,
+	bserr, err = utils.RunCommandToFile(verbose, "kubectl", filename,
 		"--kubeconfig", filename+".tmp",
 		"config",
 		"view", "--flatten", "--minify")
 	if err != nil {
-		return "Unable to clone kubeconfig", serr, err
+		return "", "Unable to clone kubeconfig:\n" + bserr.String(), err
 	}
 
 	color.Blue("Deleting temp kubeconfig ... ")
 	err = os.Remove(filename + ".tmp")
 	if err != nil {
-		return "Unable to remove tmp kubeconfig", serr, err
+		return "", "Unable to remove tmp kubeconfig", err
 	}
 
 	return filename, "", nil
 }
 
 // CreateKubeconfig : Creates the kubeconfig, by doing the following:
+// TODO: Decide if we wanna remove this code, and dependent code
 // * Get the token for the service account
 // * Get information about the current kubeconfig
 // * Generates a kubeconfig from the above
 // * Writes it to a file
 // Returns full path to created kubeconfig file, string error, error
-func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa ServiceAccount, verbose bool) (string, string, error) {
-	color.Blue("Getting token for service account ... ")
-	token, serr, err := c.getToken(sa, verbose)
-	if err != nil {
-		serr = "Unable to obtain token for service account. Check you have access to the service account created.\n" + serr
-		ctx.Error(serr, err)
-		return "", serr, err
-	}
+// func (c *Cluster) CreateKubeconfig(ctx diagnostics.Handler, filename string, sa ServiceAccount, verbose bool) (string, string, error) {
+// 	color.Blue("Getting token for service account ... ")
+// 	token, serr, err := c.getToken(sa, verbose)
+// 	if err != nil {
+// 		serr = "Unable to obtain token for service account. Check you have access to the service account created.\n" + serr
+// 		ctx.Error(serr, err)
+// 		return "", serr, err
+// 	}
 
-	color.Blue("Getting cluster info ... ")
-	srv, ca, serr, err := c.getClusterInfo(verbose)
-	if err != nil {
-		serr = "Failed to get cluster info:\n" + serr
-		return "", serr, err
-	}
+// 	color.Blue("Getting cluster info ... ")
+// 	srv, ca, serr, err := c.getClusterInfo(verbose)
+// 	if err != nil {
+// 		serr = "Failed to get cluster info:\n" + serr
+// 		return "", serr, err
+// 	}
 
-	sac := serviceAccountContext{
-		Alias:  sa.Namespace + "-" + sa.ServiceAccountName,
-		Token:  token,
-		Server: srv,
-		CA:     ca,
-	}
+// 	sac := serviceAccountContext{
+// 		Alias:  sa.Namespace + "-" + sa.ServiceAccountName,
+// 		Token:  token,
+// 		Server: srv,
+// 		CA:     ca,
+// 	}
 
-	color.Blue("Building kubeconfig ... ")
-	kc, serr, err := buildKubeconfig(sac, verbose)
-	if err != nil {
-		serr = "Failed to build kubeconfig:\n" + serr
-		return "", serr, err
-	}
+// 	color.Blue("Building kubeconfig ... ")
+// 	kc, serr, err := buildKubeconfig(sac, verbose)
+// 	if err != nil {
+// 		serr = "Failed to build kubeconfig:\n" + serr
+// 		return "", serr, err
+// 	}
 
-	color.Blue("Writing kubeconfig ... ")
-	// fmt.Println(kc)
-	f, serr, err := writeKubeconfigFile(kc, filename, verbose)
-	if err != nil {
-		serr = "Failed to write kubeconfig:\n" + serr
-		return "", serr, err
-	}
+// 	color.Blue("Writing kubeconfig ... ")
+// 	// fmt.Println(kc)
+// 	f, serr, err := writeKubeconfigFile(kc, filename, verbose)
+// 	if err != nil {
+// 		serr = "Failed to write kubeconfig:\n" + serr
+// 		return "", serr, err
+// 	}
 
-	color.Blue("Checking connectivity to the cluster ...")
-	err = checkKubeConfigConnectivity(f, verbose)
-	if err != nil {
-		serr = "Connection with generated kubeconfig failed:\n" + serr
-		ctx.Error("Unable to make a kubeconfig for the selected cluster", err)
-		return "", serr, err
-	}
+// 	color.Blue("Checking connectivity to the cluster ...")
+// 	err = checkKubeConfigConnectivity(f, verbose)
+// 	if err != nil {
+// 		serr = "Connection with generated kubeconfig failed:\n" + serr
+// 		ctx.Error("Unable to make a kubeconfig for the selected cluster", err)
+// 		return "", serr, err
+// 	}
 
-	return f, "", nil
-}
+// 	return f, "", nil
+// }
 
 // Returns token, error string, error
-// Called by CreateKubeconfig
+// Called by CreateKubeconfig and CreateKubeconfigUsingKubectl
 func (c *Cluster) getToken(sa ServiceAccount, verbose bool) (string, string, error) {
 	options1 := c.buildCommand([]string{
 		"get", "serviceaccount", sa.ServiceAccountName,
