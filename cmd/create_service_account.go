@@ -99,7 +99,7 @@ var createServiceAccount = &cobra.Command{
 			os.Exit(1)
 		}
 
-		o, serr, err := cluster.CreateKubeconfig(ctx, f, sa, verbose)
+		o, serr, err := cluster.CreateKubeconfigUsingKubectl(ctx, f, sa, verbose)
 		if err != nil || serr != "" {
 			color.Red("Creating Kubeconfig failed, exiting")
 			color.Red(serr)

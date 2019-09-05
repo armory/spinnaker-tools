@@ -2,10 +2,10 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"fmt"
 )
 
 func RunCommand(verbose bool, command string, args ...string) (*bytes.Buffer, *bytes.Buffer, error) {
@@ -23,6 +23,34 @@ func RunCommand(verbose bool, command string, args ...string) (*bytes.Buffer, *b
 		return nil, serr, err
 	}
 	return out, serr, nil
+}
+
+// TODO determine if this should return a *bytes.Buffer instead of a string
+func RunCommandToFile(verbose bool, command string, filename string, args ...string) (*bytes.Buffer, error) {
+	if verbose {
+		fmt.Println(command)
+		fmt.Println(args)
+		fmt.Println(filename) // Todo add additional stuff
+	}
+
+	cmd := exec.Command(command, args...)
+	outfile, err := os.Create(filename)
+	if err != nil {
+		return bytes.NewBufferString("Unable to create output file"), err
+	}
+	defer outfile.Close()
+
+	serr := &bytes.Buffer{}
+	cmd.Stdout = outfile
+	cmd.Stderr = serr
+
+	err = cmd.Run()
+	if err != nil {
+		return serr, err
+	}
+
+	cmd.Wait()
+	return nil, nil
 }
 
 // Need better passback here
